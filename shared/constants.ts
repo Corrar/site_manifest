@@ -33,4 +33,14 @@ export const INPUT_BUDGET_MAX = 3;
 export const INPUT_QUEUE_MAX = 10;
 export const IDLE_AFTER_TICKS = 3;
 export const SPAWN_RADIUS = 30;
-export const ANIM = { idle: 0, walk: 1, run: 2, wave: 3 } as const;
+export const ANIM = { idle: 0, walk: 1, run: 2, wave: 3, dance: 4 } as const;
+/** Animações que o jogador pode pedir parado (emotes). */
+export const EMOTES: readonly number[] = [ANIM.wave, ANIM.dance];
+/** Veículos de som. Vão no snapshot PERTO nos 4 bits altos do byte de animação. */
+export const VEHICLE = { none: 0, car: 1, truck: 2 } as const;
+export type VehicleSpec = { name: string; speed: number; boost: number; radius: number; turn: number; soundRange: number };
+export const VEHICLE_SPECS: readonly (VehicleSpec | null)[] = [
+  null,
+  { name: 'Carro de som', speed: 9, boost: 12, radius: 1.4, turn: 2.2, soundRange: 55 },
+  { name: 'Caminhão de som', speed: 5.5, boost: 7, radius: 2.4, turn: 1.0, soundRange: 120 },
+];

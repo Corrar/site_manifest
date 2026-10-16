@@ -29,9 +29,11 @@ export class Predictor {
     return { ...input, seq: this.seq };
   }
 
-  reconcile(server: { x: number; z: number }, ackSeq: number): void {
+  reconcile(server: { x: number; z: number; yaw?: number }, ackSeq: number): void {
     this.pending = this.pending.filter((p) => seqNewer(p.seq, ackSeq));
-    let s: MoveState = { x: server.x, z: server.z, yaw: this.state.yaw, anim: this.state.anim };
+    // Num veículo a direção faz parte da física, então parte da direção do servidor.
+    const yaw = this.state.vehicle && server.yaw !== undefined ? server.yaw : this.state.yaw;
+    let s: MoveState = { x: server.x, z: server.z, yaw, anim: this.state.anim, vehicle: this.state.vehicle };
     for (const p of this.pending) s = stepMove(s, p.input, this.collider, TICK_DT);
     const ex = this.state.x - s.x;
     const ez = this.state.z - s.z;
@@ -42,7 +44,11 @@ export class Predictor {
       this.offX += ex;
       this.offZ += ez;
     }
-    this.state = { x: s.x, z: s.z, yaw: this.state.yaw, anim: this.state.anim };
+    this.state = { x: s.x, z: s.z, yaw: this.state.vehicle ? s.yaw : this.state.yaw, anim: this.state.anim, vehicle: this.state.vehicle };
+  }
+
+  setVehicle(kind: number): void {
+    this.state = { ...this.state, vehicle: kind };
   }
 
   /** Posição para desenhar: previsto + erro que decai em ~SMOOTH_MS. */

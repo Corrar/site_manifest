@@ -93,3 +93,20 @@ describe('World', () => {
     expect(w.teamCounts(3)).toEqual([1, 0, 0]);
   });
 });
+
+describe('World: emotes', () => {
+  it('emote parado vale até o jogador andar', () => {
+    const w = new World(null);
+    const p = w.join(ana, 0)!;
+    w.queueInput(p, { dx: 0, dz: 0, run: false, seq: 1, emote: ANIM.dance });
+    w.step(50);
+    expect(p.anim).toBe(ANIM.dance);
+    for (let t = 2; t <= 5; t++) w.step(t * 50);
+    expect(p.anim).toBe(ANIM.dance);
+    w.queueInput(p, { dx: 1, dz: 0, run: false, seq: 2 });
+    w.step(300);
+    expect(p.anim).toBe(ANIM.walk);
+    for (let t = 7; t <= 10; t++) w.step(t * 50);
+    expect(p.anim).toBe(ANIM.idle);
+  });
+});

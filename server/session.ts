@@ -2,7 +2,7 @@ import {
   FAR_HZ, LOBBY_STATS_MS, MAX_INVALID_STREAK, MAX_MSGS_PER_SEC, MAX_PLAYERS, PROTOCOL_VERSION, TICK_HZ, TIMEOUT_MS,
 } from '../shared/constants.ts';
 import {
-  encodeFar, encodeNear, parseClientMessage,
+  encodeFar, encodeNear, packAnim, parseClientMessage,
   type Account, type ErrorCode, type FarActor, type NearActor, type Person, type ServerMessage,
 } from '../shared/protocol.ts';
 import type { VerifyToken } from './auth.ts';
@@ -106,7 +106,7 @@ export class Hub {
         return this.join(c, m.auth, m.spectate, now);
       case 'input':
         if (c.state === 'player' && c.player) {
-          this.world.queueInput(c.player, { dx: m.dx, dz: m.dz, run: m.run, seq: m.seq });
+          this.world.queueInput(c.player, { dx: m.dx, dz: m.dz, run: m.run, seq: m.seq, emote: m.emote });
         }
         return;
       case 'view':
@@ -117,6 +117,9 @@ export class Hub {
         return;
       case 'chat':
         return this.chat(c, m.text, now);
+      case 'vehicle':
+        if (c.state === 'player' && c.player) this.world.setVehicle(c.player, m.kind);
+        return;
       case 'ping':
         return this.send(c, { t: 'pong', at: m.at, now });
     }
@@ -227,7 +230,7 @@ export class Hub {
     for (const id of nearIds) {
       const p = this.world.players.get(id);
       if (!p) continue;
-      near.push({ id, x: p.x, z: p.z, yaw: p.yaw, anim: p.anim, team: p.team, look: p.look });
+      near.push({ id, x: p.x, z: p.z, yaw: p.yaw, anim: packAnim(p.anim, p.vehicle), team: p.team, look: p.look });
       if (c.known.get(id) !== p) {
         c.known.set(id, p);
         fresh.push({ id, nick: p.nick, team: p.team, look: p.look });

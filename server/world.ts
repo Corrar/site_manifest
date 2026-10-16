@@ -2,12 +2,12 @@ import {
   ANIM, IDLE_AFTER_TICKS, INPUT_BUDGET_MAX, INPUT_QUEUE_MAX, PLAYER_RADIUS, RESUME_MS, SPAWN_RADIUS,
 } from '../shared/constants.ts';
 import type { Collider } from '../shared/map.ts';
-import { stepMove, type MoveInput } from '../shared/movement.ts';
+import { bodyRadius, stepMove, type MoveInput } from '../shared/movement.ts';
 import { IdAllocator } from './ids.ts';
 import { SpatialGrid } from './interest.ts';
 
 export type PlayerIdentity = { userId: string; nick: string; team: number; look: number };
-export type QueuedInput = MoveInput & { seq: number };
+export type QueuedInput = MoveInput & { seq: number; emote?: number };
 export type Player = PlayerIdentity & {
   id: number;
   x: number;
@@ -18,6 +18,8 @@ export type Player = PlayerIdentity & {
   budget: number;
   lastSeq: number;
   idleTicks: number;
+  emote: number; // animação de emote enquanto parado (0 = nenhuma)
+  vehicle: number; // VEHICLE.*
   token: string;
   connected: boolean;
   leftAt: number;
@@ -54,7 +56,7 @@ export class World {
     const [x, z] = this.spawnPoint();
     const p: Player = {
       ...who, id, x, z, yaw: 0, anim: ANIM.idle,
-      queue: [], budget: INPUT_BUDGET_MAX, lastSeq: 0, idleTicks: 0,
+      queue: [], budget: INPUT_BUDGET_MAX, lastSeq: 0, idleTicks: 0, emote: 0, vehicle: 0,
       token: randomToken(), connected: true, leftAt: 0,
     };
     this.players.set(id, p);
@@ -69,6 +71,15 @@ export class World {
     p.leftAt = now;
     p.queue.length = 0;
     p.anim = ANIM.idle;
+    p.emote = 0;
+  }
+
+  /** Entra (kind > 0) ou sai (0) de um veículo. A posição é corrigida para o raio novo. */
+  setVehicle(p: Player, kind: number): void {
+    p.vehicle = kind;
+    p.emote = 0;
+    if (this.collider) [p.x, p.z] = this.collider.resolve(p.x, p.z, bodyRadius(kind));
+    this.grid.set(p.id, p.x, p.z);
   }
 
   queueInput(p: Player, input: QueuedInput): void {
@@ -93,12 +104,15 @@ export class World {
         p.x = s.x;
         p.z = s.z;
         p.yaw = s.yaw;
-        p.anim = s.anim;
+        // Andar cancela o emote; um input parado com emote o inicia.
+        if (s.anim !== ANIM.idle) p.emote = 0;
+        else if (input.emote && !p.vehicle) p.emote = input.emote;
+        p.anim = s.anim === ANIM.idle && p.emote ? p.emote : s.anim;
         p.lastSeq = input.seq;
         moved = true;
       }
       if (moved) p.idleTicks = 0;
-      else if (++p.idleTicks >= IDLE_AFTER_TICKS) p.anim = ANIM.idle;
+      else if (++p.idleTicks >= IDLE_AFTER_TICKS) p.anim = p.emote || ANIM.idle;
       this.grid.set(p.id, p.x, p.z);
     }
   }

@@ -63,6 +63,9 @@ describe('parseClientMessage', () => {
       .toEqual({ t: 'join', auth: null, spectate: true, token: null });
     expect(parseClientMessage('{"t":"input","dx":0.5,"dz":-1,"run":true,"seq":65535}'))
       .toEqual({ t: 'input', dx: 0.5, dz: -1, run: true, seq: 65535 });
+    expect(parseClientMessage('{"t":"input","dx":0,"dz":0,"run":false,"seq":1,"emote":4}'))
+      .toEqual({ t: 'input', dx: 0, dz: 0, run: false, seq: 1, emote: 4 });
+    expect(parseClientMessage('{"t":"vehicle","kind":2}')).toEqual({ t: 'vehicle', kind: 2 });
     expect(parseClientMessage('{"t":"view","x":10,"z":-5}')).toEqual({ t: 'view', x: 10, z: -5 });
     expect(parseClientMessage('{"t":"chat","text":"olá"}')).toEqual({ t: 'chat', text: 'olá' });
     expect(parseClientMessage('{"t":"ping","at":5}')).toEqual({ t: 'ping', at: 5 });
@@ -74,6 +77,8 @@ describe('parseClientMessage', () => {
       '{"t":"input","dx":0,"dz":0,"run":"sim","seq":1}',
       '{"t":"input","dx":0,"dz":0,"run":false,"seq":70000}',
       '{"t":"view","x":1e9,"z":0}',
+      '{"t":"vehicle","kind":9}',
+      '{"t":"input","dx":0,"dz":0,"run":false,"seq":1,"emote":2}',
       `{"t":"chat","text":"${'a'.repeat(201)}"}`,
       '{"t":"join","spectate":"x"}',
       '{"t":"join","token":"curto"}',

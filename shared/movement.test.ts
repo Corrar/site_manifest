@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANIM, PLAYER_RADIUS, RUN_SPEED, TICK_DT, WALK_SPEED } from './constants.ts';
+import { ANIM, PLAYER_RADIUS, RUN_SPEED, TICK_DT, VEHICLE, VEHICLE_SPECS, WALK_SPEED } from './constants.ts';
 import { pointInPolygon, pushOutOfPolygon, type Pt } from './geometry.ts';
 import { Collider } from './map.ts';
 import { stepMove, type MoveState } from './movement.ts';
@@ -60,5 +60,30 @@ describe('stepMove', () => {
   it('input zerado mantém posição e direção, animação parado', () => {
     const s = stepMove({ x: 1, z: 2, yaw: 1, anim: ANIM.run }, { dx: 0, dz: 0, run: true }, null);
     expect(s).toEqual({ x: 1, z: 2, yaw: 1, anim: ANIM.idle });
+  });
+});
+
+describe('stepMove: veículos', () => {
+  const car: MoveState = { x: 0, z: 0, yaw: 0, anim: ANIM.idle, vehicle: VEHICLE.car };
+  const spec = VEHICLE_SPECS[VEHICLE.car]!;
+  it('anda para a frente na velocidade do veículo', () => {
+    const s = stepMove(car, { dx: 0, dz: 1, run: false }, null);
+    expect(s.z).toBeCloseTo(spec.speed * TICK_DT);
+    expect(s.vehicle).toBe(VEHICLE.car);
+  });
+  it('vira com velocidade limitada', () => {
+    const s = stepMove(car, { dx: 1, dz: 0, run: false }, null);
+    expect(s.yaw).toBeCloseTo(spec.turn * TICK_DT);
+  });
+  it('pedir para trás vira marcha a ré, mais devagar', () => {
+    const s = stepMove(car, { dx: 0, dz: -1, run: false }, null);
+    expect(s.z).toBeCloseTo(-spec.speed * 0.4 * TICK_DT);
+    expect(s.yaw).toBeCloseTo(0);
+  });
+  it('colide com o raio do veículo', () => {
+    const col = new Collider([[[2, -10], [4, -10], [4, 10], [2, 10]]], { minX: -50, maxX: 50, minZ: -50, maxZ: 50 });
+    let s: MoveState = { ...car, yaw: Math.PI / 2 };
+    for (let i = 0; i < 40; i++) s = stepMove(s, { dx: 1, dz: 0, run: false }, col);
+    expect(s.x).toBeLessThanOrEqual(2 - spec.radius + 1e-6);
   });
 });

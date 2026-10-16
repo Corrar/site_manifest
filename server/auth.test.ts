@@ -2,6 +2,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { createDevVerifier, createSupabaseVerifier } from './auth.ts';
 import { MemoryProfileStore } from './profiles.ts';
+import { normalizeLook } from '../shared/looks.ts';
 
 const URL_ = 'https://exemplo.supabase.co';
 const { publicKey, privateKey } = await generateKeyPair('ES256');
@@ -36,6 +37,12 @@ describe('createDevVerifier', () => {
     const dev = createDevVerifier(store);
     expect(await dev('dev:Ana:1')).toEqual({ userId: 'dev-ana' });
     expect(await store.get('dev-ana')).toEqual({ userId: 'dev-ana', nick: 'Ana', team: 1, look: 0, bannedUntil: null });
+  });
+  it('aceita o visual opcional e normaliza', async () => {
+    const store = new MemoryProfileStore();
+    const dev = createDevVerifier(store);
+    await dev('dev:Bia:2:1234');
+    expect((await store.get('dev-bia'))?.look).toBe(normalizeLook(1234));
   });
   it('recusa formatos inválidos', async () => {
     const dev = createDevVerifier(new MemoryProfileStore());

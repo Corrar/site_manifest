@@ -1,4 +1,4 @@
-import { CHAT_MAX_LEN, MAX_FRAME_BYTES, POS_SCALE } from './constants.ts';
+import { CHAT_MAX_LEN, EMOTES, MAX_FRAME_BYTES, POS_SCALE, VEHICLE_SPECS } from './constants.ts';
 
 export const NEAR_TYPE = 0x01;
 export const FAR_TYPE = 0x02;
@@ -23,9 +23,10 @@ export type ErrorCode =
 export type ClientMessage =
   | { t: 'lobby' }
   | { t: 'join'; auth: string | null; spectate: boolean; token: string | null }
-  | { t: 'input'; dx: number; dz: number; run: boolean; seq: number }
+  | { t: 'input'; dx: number; dz: number; run: boolean; seq: number; emote?: number }
   | { t: 'view'; x: number; z: number }
   | { t: 'chat'; text: string }
+  | { t: 'vehicle'; kind: number }
   | { t: 'ping'; at: number };
 
 export type ServerMessage =
@@ -39,6 +40,10 @@ export type ServerMessage =
   | { t: 'restarting' };
 
 const quantPos = (m: number) => Math.max(-32768, Math.min(32767, Math.round(m * POS_SCALE)));
+/** Byte de animação do snapshot: animação nos 4 bits baixos, veículo nos 4 altos. */
+export const packAnim = (anim: number, vehicle: number) => (anim & 15) | ((vehicle & 15) << 4);
+export const unpackAnim = (b: number) => ({ anim: b & 15, vehicle: b >> 4 });
+
 const quantYaw = (rad: number) => Math.round(((((rad % TWO_PI) + TWO_PI) % TWO_PI) / TWO_PI) * 256) & 255;
 
 export function encodeNear(tick: number, ackSeq: number, actors: readonly NearActor[]): Uint8Array {
@@ -160,13 +165,19 @@ export function parseClientMessage(raw: string): ClientMessage | null {
     case 'input':
       if (!inRange(o.dx, 1) || !inRange(o.dz, 1) || typeof o.run !== 'boolean') return null;
       if (!Number.isInteger(o.seq) || (o.seq as number) < 0 || (o.seq as number) > 0xffff) return null;
-      return { t: 'input', dx: o.dx, dz: o.dz, run: o.run, seq: o.seq as number };
+      if (o.emote !== undefined && !EMOTES.includes(o.emote as number)) return null;
+      return o.emote === undefined
+        ? { t: 'input', dx: o.dx, dz: o.dz, run: o.run, seq: o.seq as number }
+        : { t: 'input', dx: o.dx, dz: o.dz, run: o.run, seq: o.seq as number, emote: o.emote as number };
     case 'view':
       if (!inRange(o.x, 5000) || !inRange(o.z, 5000)) return null;
       return { t: 'view', x: o.x, z: o.z };
     case 'chat':
       if (typeof o.text !== 'string' || o.text.length > CHAT_MAX_LEN) return null;
       return { t: 'chat', text: o.text };
+    case 'vehicle':
+      if (!Number.isInteger(o.kind) || (o.kind as number) < 0 || (o.kind as number) >= VEHICLE_SPECS.length) return null;
+      return { t: 'vehicle', kind: o.kind as number };
     case 'ping':
       if (!isNum(o.at)) return null;
       return { t: 'ping', at: o.at };

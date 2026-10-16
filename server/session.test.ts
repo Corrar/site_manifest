@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LOBBY_STATS_MS, MAX_INVALID_STREAK, MAX_MSGS_PER_SEC, TIMEOUT_MS } from '../shared/constants.ts';
-import { decodeSnapshot, FAR_TYPE, NEAR_TYPE, type NearSnapshot } from '../shared/protocol.ts';
+import { decodeSnapshot, FAR_TYPE, NEAR_TYPE, unpackAnim, type NearSnapshot } from '../shared/protocol.ts';
 import { createDevVerifier, type VerifyToken } from './auth.ts';
 import { Chat } from './chat.ts';
 import { MemoryProfileStore } from './profiles.ts';
@@ -200,5 +200,24 @@ describe('Hub: proteções e ciclo de vida', () => {
     hub.shutdown();
     expect(a.conn.last('restarting')).toEqual({ t: 'restarting' });
     expect(a.conn.closed?.[0]).toBe(1012);
+  });
+});
+
+describe('Hub: veículos', () => {
+  it('entrar num veículo aparece no byte de animação do snapshot', async () => {
+    const { hub, connect, msg } = setup();
+    const a = connect();
+    await msg(a, { t: 'join', auth: 'dev:Ana:0' });
+    await msg(a, { t: 'vehicle', kind: 2 });
+    hub.tick(50);
+    expect(unpackAnim(a.conn.lastNear().actors[0].anim).vehicle).toBe(2);
+  });
+  it('espectador não entra em veículo', async () => {
+    const { hub, connect, msg, world } = setup();
+    const s = connect();
+    await msg(s, { t: 'join', spectate: true });
+    await msg(s, { t: 'vehicle', kind: 1 });
+    hub.tick(50);
+    expect(world.players.size).toBe(0);
   });
 });

@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import { normalizeLook } from '../shared/looks.ts';
 import type { MemoryProfileStore } from './profiles.ts';
 
 export type VerifyToken = (token: string) => Promise<{ userId: string } | null>;
@@ -17,7 +18,7 @@ export function createSupabaseVerifier(supabaseUrl: string, keys?: JWTVerifyGetK
   };
 }
 
-const DEV_TOKEN = /^dev:([^:]{2,20}):(\d{1,2})$/;
+const DEV_TOKEN = /^dev:([^:]{2,20}):(\d{1,2})(?::(\d{1,9}))?$/;
 
 /** Só para desenvolvimento e bots (DEV_AUTH=1). O app recusa iniciar com isso em produção. */
 export function createDevVerifier(store: MemoryProfileStore): VerifyToken {
@@ -25,7 +26,7 @@ export function createDevVerifier(store: MemoryProfileStore): VerifyToken {
     const m = DEV_TOKEN.exec(token);
     if (!m) return null;
     const userId = `dev-${m[1].toLowerCase()}`;
-    store.put({ userId, nick: m[1], team: Number(m[2]), look: 0, bannedUntil: null });
+    store.put({ userId, nick: m[1], team: Number(m[2]), look: normalizeLook(Number(m[3] ?? 0)), bannedUntil: null });
     return { userId };
   };
 }
