@@ -10,6 +10,8 @@
 
 **Specs:** [núcleo](../specs/2026-10-16-nucleo-multiplayer-design.md) e [contas/economia](../specs/2026-10-16-contas-economia-p2w-design.md). Leia as duas antes de começar.
 
+**Execução escolhida (2026-10-16):** um agente por tarefa (superpowers:subagent-driven-development). **Não iniciar sem autorização explícita do dono do projeto.**
+
 ## Restrições globais
 
 - Node ≥ 24. O servidor roda `.ts` direto (`node server/index.ts`). Por isso:
