@@ -2,7 +2,7 @@
 
 Jogo 3D multiplayer no navegador. É uma manifestação online na Esplanada dos Ministérios, em Brasília, com times políticos, chat, PvP, disputa de território e ranking de influência. Para jogar é preciso entrar com Google ou com e-mail e senha. Para assistir, não. Itens especiais são comprados com moedas, pagas via Pix.
 
-> **Status:** em especificação. Ainda não há código: os documentos de design estão em [`docs/specs`](docs/specs). O nome "Manifest" é provisório.
+> **Status:** plano de implementação do núcleo pronto ([`docs/plans`](docs/plans)). Ainda não há código; as especificações estão em [`docs/specs`](docs/specs). O nome "Manifest" é provisório.
 
 ## Documentação
 
@@ -10,12 +10,13 @@ Jogo 3D multiplayer no navegador. É uma manifestação online na Esplanada dos 
 |---|---|
 | [Núcleo multiplayer](docs/specs/2026-10-16-nucleo-multiplayer-design.md) | Arquitetura, protocolo de rede (JSON + snapshots binários), servidor autoritativo a 20 Hz, área de interesse, mapa do OpenStreetMap, testes |
 | [Contas, economia e pay-to-win](docs/specs/2026-10-16-contas-economia-p2w-design.md) | Login (Supabase), moedas via Pix (Woovi), loja e inventário, PvP, território, influência, regras legais |
+| [Plano: núcleo multiplayer](docs/plans/2026-10-16-nucleo-multiplayer.md) | 15 tarefas com testes, código e comandos para implementar o subprojeto 1 |
 
 ## Roadmap
 
 | # | Subprojeto | Status |
 |---|---|---|
-| 1 | Núcleo multiplayer: mapa, andar com outros jogadores, chat, espectador | Especificado |
+| 1 | Núcleo multiplayer: mapa, andar com outros jogadores, chat, espectador | Plano pronto |
 | 2 | Contas: Google, e-mail/senha, perfil | Especificado |
 | 3 | Economia: moedas, Pix, loja, inventário | Especificado |
 | 4 | PvP | Regras e catálogo definidos |
