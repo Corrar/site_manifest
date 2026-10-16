@@ -18,7 +18,7 @@ async function start(maxPlayers?: number): Promise<App> {
   app = await startServer({
     port: 0, host: '127.0.0.1', verify: createDevVerifier(store), profiles: store, teams: 3,
     allowedOrigins: [ORIGIN], collider: null, maxPlayers,
-    random: () => 0.5, // spawn fixo: os dois jogadores ficam "perto" (SPAWN_RADIUS 30 > NEAR_RADIUS 40 / 2)
+    random: () => 0.5, // spawn fixo: sorteado (raio 30), dois jogadores podem nascer a até 60 m, fora do "perto" (40 m)
   });
   return app;
 }
