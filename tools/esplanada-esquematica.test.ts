@@ -17,7 +17,7 @@ describe('mapa esquemático da Esplanada', () => {
 
   it('tem prédios, vias, gramados e marcos', () => {
     expect(map.version).toBe(1);
-    expect(map.buildings.length).toBe(18); // 16 ministérios + Itamaraty + Justiça (nenhum cai num marco)
+    expect(map.buildings.length).toBe(36); // 16 ministérios, 16 anexos, Itamaraty, Justiça, Planalto e STF
     expect(map.roads.length).toBe(4 + 2 * MINISTRY_U.length);
     expect(map.areas.length).toBe(2);
     expect(map.areas.every((a) => a.kind === 'grass')).toBe(true);
@@ -31,6 +31,7 @@ describe('mapa esquemático da Esplanada', () => {
     expect(collider.blocked(...toWorld(-260, 220))).toBe(true);
     expect(collider.blocked(...toWorld(335, -220))).toBe(true);
     expect(collider.blocked(...toWorld(420, 215))).toBe(true);
+    expect(collider.blocked(...toWorld(845, -175))).toBe(true); // Planalto
     expect(collider.blocked(...LANDMARKS[0].center)).toBe(true); // Congresso é sólido
   });
 

@@ -33,8 +33,8 @@ const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) 
 document.body.classList.add('in-lobby');
 const hud = new Hud();
 const stage = createStage(byId('stage'), () => hud.fatal('A placa de vídeo reiniciou.'));
-buildMap(map, stage.scene);
-buildLandmarks(stage.scene);
+buildMap(map, stage.scene, stage.mobile);
+const animateLandmarks = buildLandmarks(stage.scene);
 const avatars = new Avatars(stage.scene);
 const crowd = new Crowd(stage.scene);
 const rig = new CameraRig(stage.camera, stage.renderer.domElement);
@@ -323,6 +323,7 @@ function frame(now: number): void {
     rig.update(self);
   }
   followSun(stage, self?.x ?? rig.focus.x, self?.z ?? rig.focus.z);
+  animateLandmarks(now / 1000);
   stage.renderer.render(stage.scene, stage.camera);
 
   if (joined && now - lastMinimap > 100) {

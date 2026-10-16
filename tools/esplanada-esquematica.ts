@@ -63,10 +63,16 @@ export function buildSchematicMap(): MapData {
   type Block = { u: number; v: number; du: number; dv: number; height: number };
   const blocks: Block[] = [];
   for (const side of [-1, 1]) {
-    for (const u of MINISTRY_U) blocks.push({ u, v: side * 220, du: MINISTRY_W, dv: 100, height: 40 });
+    for (const u of MINISTRY_U) {
+      blocks.push({ u, v: side * 220, du: MINISTRY_W, dv: 100, height: 40 });
+      blocks.push({ u, v: side * 298, du: 44, dv: 36, height: 21 }); // anexo, atrás do bloco
+    }
     // Sul: Palácio do Itamaraty. Norte: Palácio da Justiça.
     blocks.push({ u: PALACE_U, v: side * 215, du: PALACE_SIZE, dv: PALACE_SIZE, height: 20 });
   }
+  // Praça dos Três Poderes, depois do Congresso: Palácio do Planalto (norte) e STF (sul).
+  blocks.push({ u: 845, v: -175, du: 60, dv: 110, height: 16 });
+  blocks.push({ u: 845, v: 175, du: 50, dv: 70, height: 14 });
 
   const buildings: Building[] = [];
   for (const b of blocks) {
