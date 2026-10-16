@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Manifest · manifestação online na Esplanada</title>
+    <meta name="description" content="Manifestação online na Esplanada dos Ministérios. Entre com sua conta, escolha seu time e vá para a Esplanada." />
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <div id="hud" hidden><span id="ping"></span></div>
+
+    <section id="lobby" class="panel">
+      <h1>Manifest</h1>
+      <p class="sub">Manifestação online na Esplanada dos Ministérios</p>
+      <ul id="lobby-teams"></ul>
+      <form id="login-form" hidden>
+        <label>Apelido <input id="login-nick" maxlength="20" minlength="2" required autocomplete="off" /></label>
+        <fieldset id="login-teams"><legend>Seu time</legend></fieldset>
+        <p class="hint">Login de desenvolvimento. O login com Google e e-mail chega no subprojeto de contas.</p>
+        <button type="submit" class="primary">Entrar na Esplanada</button>
+      </form>
+      <div class="actions">
+        <button id="btn-play" class="primary">Entrar</button>
+        <button id="btn-watch">Só quero assistir</button>
+      </div>
+      <p id="lobby-error" role="alert"></p>
+    </section>
+
+    <section id="chat" class="panel" hidden>
+      <ol id="chat-log" aria-live="polite"></ol>
+      <form id="chat-form">
+        <input id="chat-input" maxlength="200" autocomplete="off" />
+        <button>Enviar</button>
+      </form>
+    </section>
+
+    <div id="joystick" hidden><div class="knob"></div></div>
+    <div id="banner" role="status" hidden></div>
+    <footer id="credits">mapa © colaboradores do OpenStreetMap</footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

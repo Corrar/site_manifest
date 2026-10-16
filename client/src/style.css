@@ -1,0 +1,48 @@
+:root {
+  --bg: #12171c;
+  --panel: rgba(18, 23, 28, 0.88);
+  --text: #f1f3f5;
+  --muted: #9aa5b1;
+  --accent: #f2c200;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+#stage { position: fixed; inset: 0; touch-action: none; }
+.panel { position: fixed; background: var(--panel); border-radius: 12px; padding: 16px; backdrop-filter: blur(6px); }
+button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 1px solid #3a4550; background: #1f2830; color: var(--text); cursor: pointer; }
+button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 700; }
+input { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4550; background: #0e1317; color: var(--text); }
+
+#lobby { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); }
+#lobby h1 { margin: 0; letter-spacing: 0.04em; }
+#lobby .sub { margin: 4px 0 16px; color: var(--muted); }
+#lobby-teams { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 6px; }
+#lobby-teams li { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; background: #1a2229; border-left: 4px solid var(--team); }
+#login-form { display: grid; gap: 10px; margin-bottom: 12px; }
+#login-form label { display: grid; gap: 4px; }
+#login-form fieldset { border: 1px solid #3a4550; border-radius: 8px; display: flex; gap: 12px; flex-wrap: wrap; }
+.hint { color: var(--muted); font-size: 0.85em; margin: 0; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#lobby-error { color: #ff8a80; min-height: 1.2em; margin: 10px 0 0; }
+
+#chat { right: 16px; bottom: 16px; width: min(360px, calc(100vw - 32px)); padding: 10px; }
+#chat-log { list-style: none; margin: 0 0 8px; padding: 0; max-height: 30vh; overflow-y: auto; font-size: 0.92em; }
+#chat-log li { padding: 2px 0; overflow-wrap: anywhere; }
+#chat-log li.system { color: var(--muted); font-style: italic; }
+#chat-form { display: flex; gap: 6px; }
+#chat-form input { flex: 1; min-width: 0; }
+
+#hud { position: fixed; top: 12px; right: 16px; color: var(--muted); font-size: 0.85em; }
+#banner { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: #b3261e; color: #fff; padding: 8px 14px; border-radius: 8px; }
+#banner button { margin-left: 10px; padding: 4px 10px; }
+#credits { position: fixed; left: 8px; bottom: 6px; font-size: 0.72em; color: #fff; text-shadow: 0 1px 2px #000; }
+#joystick { position: fixed; left: 24px; bottom: 40px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); touch-action: none; }
+#joystick .knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255, 255, 255, 0.45); }
+
+@media (max-width: 600px) {
+  #chat { left: 16px; right: auto; bottom: 170px; }
+  #chat-log { max-height: 20vh; }
+}
