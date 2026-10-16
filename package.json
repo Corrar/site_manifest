@@ -13,6 +13,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "map": "node tools/osm-esplanada.ts",
+    "map:esquematico": "node tools/esplanada-esquematica.ts",
     "bots": "node tools/bots.ts"
   },
   "dependencies": {
