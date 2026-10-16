@@ -4,7 +4,7 @@
 
 **Jogo 3D multiplayer no navegador: uma manifestação online na Esplanada dos Ministérios, em Brasília.**
 
-![Status](https://img.shields.io/badge/status-planejamento-f2c200?style=flat-square)
+![Status](https://img.shields.io/badge/status-núcleo%20pronto-1f9d55?style=flat-square)
 ![Node](https://img.shields.io/badge/Node-24-1f9d55?style=flat-square&logo=nodedotjs&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-3D-2b6cb0?style=flat-square&logo=threedotjs&logoColor=white)
 ![WebSocket](https://img.shields.io/badge/WebSocket-20%20Hz-d62828?style=flat-square)
@@ -52,23 +52,23 @@ O núcleo é o primeiro dos seis subprojetos. As tarefas seguem TDD (primeiro o 
 
 | # | Tarefa | Entrega | Status |
 |---|---|---|---|
-| 1 | Base do projeto | `package.json`, TypeScript, Vite, Vitest, constantes, times, projeção geográfica | ⏳ |
-| 2 | Protocolo | Mensagens JSON validadas e snapshots binários PERTO/LONGE | ⏳ |
-| 3 | Movimento e colisão | Passo de movimento compartilhado e colisão com prédios | ⏳ |
-| 4 | Grade de interesse | Quem está perto (64) e longe (1000) de cada jogador | ⏳ |
-| 5 | Mundo | Jogadores, fila de inputs, anti speed hack, retomada em 30 s | ⏳ |
-| 6 | Chat | Filtro, intervalo, histórico e log de 7 dias sem IP | ⏳ |
-| 7 | Autenticação | JWT do Supabase, perfis e login de desenvolvimento | ⏳ |
-| 8 | Proteções de rede | Limite de taxa, conexões por IP, IP via Cloudflare, Origin | ⏳ |
-| 9 | Sessões | Join autenticado, snapshots, lobby, lotação, timeouts | ⏳ |
-| 10 | Servidor completo | HTTP + WebSocket, métricas e teste de integração | ⏳ |
-| 11 | Mapa da Esplanada | OpenStreetMap → `shared/map.json`, com Congresso e Catedral | ⏳ |
-| 12 | Rede do cliente | Interpolação, predição com reconciliação, reconexão | ⏳ |
-| 13 | Cena 3D | Mapa, marcos, avatares animados, multidão, câmera | ⏳ |
-| 14 | Interface e jogo | Lobby, chat, HUD, controles (WASD e joystick) e o jogo funcionando de ponta a ponta | ⏳ |
-| 15 | Teste de carga | 1000 bots: tick p95 < 25 ms e tráfego dentro da meta | ⏳ |
+| 1 | Base do projeto | `package.json`, TypeScript, Vite, Vitest, constantes, times, projeção geográfica | ✅ |
+| 2 | Protocolo | Mensagens JSON validadas e snapshots binários PERTO/LONGE | ✅ |
+| 3 | Movimento e colisão | Passo de movimento compartilhado e colisão com prédios | ✅ |
+| 4 | Grade de interesse | Quem está perto (64) e longe (1000) de cada jogador | ✅ |
+| 5 | Mundo | Jogadores, fila de inputs, anti speed hack, retomada em 30 s | ✅ |
+| 6 | Chat | Filtro, intervalo, histórico e log de 7 dias sem IP | ✅ |
+| 7 | Autenticação | JWT do Supabase, perfis e login de desenvolvimento | ✅ |
+| 8 | Proteções de rede | Limite de taxa, conexões por IP, IP via Cloudflare, Origin | ✅ |
+| 9 | Sessões | Join autenticado, snapshots, lobby, lotação, timeouts | ✅ |
+| 10 | Servidor completo | HTTP + WebSocket, métricas e teste de integração | ✅ |
+| 11 | Mapa da Esplanada | OpenStreetMap → `shared/map.json`, com Congresso e Catedral | ✅ (mapa esquemático provisório) |
+| 12 | Rede do cliente | Interpolação, predição com reconciliação, reconexão | ✅ |
+| 13 | Cena 3D | Mapa, marcos, avatares animados, multidão, câmera | ✅ |
+| 14 | Interface e jogo | Lobby, chat, HUD, controles (WASD e joystick) e o jogo funcionando de ponta a ponta | ✅ |
+| 15 | Teste de carga | 1000 bots: tick p95 < 25 ms e tráfego dentro da meta | ⚠️ |
 
-Legenda: ⏳ não iniciada · 🔄 em andamento · ✅ concluída
+Legenda: ⏳ não iniciada · 🔄 em andamento · ✅ concluída · ⚠️ concluída com desvio registrado
 
 ### Como o plano pode ser executado
 
@@ -82,13 +82,22 @@ Legenda: ⏳ não iniciada · 🔄 em andamento · ✅ concluída
 - **Vantagens:** acompanhamento passo a passo, e dá para ajustar o rumo no meio do lote.
 
 > **Forma escolhida:** um agente por tarefa (Subagent-Driven).
-> **Situação:** aguardando autorização para iniciar. Nenhuma tarefa foi executada ainda.
+> **Situação:** as 15 tarefas foram executadas. Pendências:
+> - **Tarefa 11:** o Overpass (OpenStreetMap) estava inacessível no ambiente de desenvolvimento, então `shared/map.json` vem de um mapa esquemático aproximado (`npm run map:esquematico`). Rode `npm run map` com acesso à internet para gerar o mapa real.
+> - **Tarefa 15:** com 1000 bots o tick ficou em p95 165 ms (meta: 25 ms). O perfil aponta `sendSnapshots` (seleção de interesse e um envio por cliente por tick) como o gargalo; detalhes no commit da tarefa.
+
+## Demonstração na Vercel
+
+A Vercel não mantém um servidor WebSocket. Por isso o deploy lá usa `npm run build:demo`: o servidor do jogo roda dentro do navegador, com 300 pessoas simuladas, e cada visitante vê a sua própria Esplanada. O jogo multiplayer de verdade precisa do servidor Node (`npm run build && npm start`) num host que aceite WebSocket.
+
+- Projeto: `manifest` (time corrar's projects), ligado a este repositório
+- URL: https://manifest-delta-five.vercel.app (protegida pela autenticação da Vercel até o lançamento público)
 
 ## Roadmap
 
 | # | Subprojeto | Status |
 |---|---|---|
-| 1 | Núcleo multiplayer: mapa, andar com outros jogadores, chat, espectador | Plano pronto |
+| 1 | Núcleo multiplayer: mapa, andar com outros jogadores, chat, espectador | Implementado (ver pendências) |
 | 2 | Contas: Google, e-mail/senha, perfil | Especificado |
 | 3 | Economia: moedas, Pix, loja, inventário | Especificado |
 | 4 | PvP | Regras e catálogo definidos |
