@@ -1,7 +1,8 @@
 // Modo demonstração: o servidor do jogo (Hub + World + Chat) roda dentro do navegador, com bots.
 // Serve para hospedagem estática (ex.: Vercel), que não mantém um servidor WebSocket.
 // Nada sai do navegador: cada visitante vê a sua própria Esplanada simulada.
-import { TICK_MS } from '../../../shared/constants.ts';
+import { ANIM, TICK_MS, VEHICLE } from '../../../shared/constants.ts';
+import { normalizeLook, packLook, randomLook } from '../../../shared/looks.ts';
 import type { Collider } from '../../../shared/map.ts';
 import { Chat } from '../../../server/chat.ts';
 import type { Profile, ProfileStore } from '../../../server/profiles.ts';
@@ -11,6 +12,8 @@ import type { SocketLike } from '../net.ts';
 
 const BOTS = 300;
 const WANDER_RADIUS = 220;
+const CARS = 6; // os primeiros bots dirigem carros de som
+const TRUCKS = 2; // e os seguintes, caminhões
 const KEEPALIVE_MS = 5000;
 const NICKS = [
   'Ana', 'Bruno', 'Carla', 'Diego', 'Elisa', 'Fábio', 'Gabi', 'Heitor', 'Iara', 'João', 'Kátia', 'Lucas',
@@ -25,11 +28,11 @@ const PHRASES = [
 /** SocketLike com readyState gravável (no WebSocket ele é só leitura). */
 type LocalSocket = Omit<SocketLike, 'readyState'> & { readyState: SocketLike['readyState'] };
 
-type Bot = { client: Client; dir: number; turnAt: number; idleUntil: number; seq: number; pingAt: number };
+type Bot = { client: Client; dir: number; turnAt: number; idleUntil: number; seq: number; pingAt: number; vehicle: number; ready: boolean };
 
 const pick = <T,>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
 
-/** Perfis em memória. Humanos: `dev:<apelido>:<time>`; bots: `bot:<n>`. */
+/** Perfis em memória. Humanos: `dev:<apelido>:<time>[:<visual>]`; bots: `bot:<n>`. */
 function demoAuth(teams: number) {
   const profiles = new Map<string, Profile>();
   const store: ProfileStore = { get: async (id) => profiles.get(id) ?? null };
@@ -38,13 +41,14 @@ function demoAuth(teams: number) {
     if (m) {
       const n = Number(m[1]);
       const userId = `bot-${n}`;
-      profiles.set(userId, { userId, nick: `${NICKS[n % NICKS.length]}${n}`, team: n % teams, look: 0, bannedUntil: null });
+      const look = packLook(randomLook());
+      profiles.set(userId, { userId, nick: `${NICKS[n % NICKS.length]}${n}`, team: n % teams, look, bannedUntil: null });
       return { userId };
     }
-    m = /^dev:([^:]{2,20}):(\d{1,2})$/.exec(token);
+    m = /^dev:([^:]{2,20}):(\d{1,2})(?::(\d{1,9}))?$/.exec(token);
     if (!m) return null;
     const userId = `dev-${m[1].toLowerCase()}`;
-    profiles.set(userId, { userId, nick: m[1], team: Number(m[2]), look: 0, bannedUntil: null });
+    profiles.set(userId, { userId, nick: m[1], team: Number(m[2]), look: normalizeLook(Number(m[3] ?? 0)), bannedUntil: null });
     return { userId };
   };
   return { store, verify };
@@ -66,7 +70,8 @@ export function startLocalServer(collider: Collider, teams: number): (url: strin
   for (let i = 0; i < BOTS; i++) {
     const client = hub.open(botConn, now0);
     send(client, { t: 'join', auth: `bot:${i}`, spectate: false }, now0);
-    bots.push({ client, dir: Math.random() * Math.PI * 2, turnAt: 0, idleUntil: 0, seq: 0, pingAt: now0 });
+    const vehicle = i < CARS ? VEHICLE.car : i < CARS + TRUCKS ? VEHICLE.truck : VEHICLE.none;
+    bots.push({ client, dir: Math.random() * Math.PI * 2, turnAt: 0, idleUntil: 0, seq: 0, pingAt: now0, vehicle, ready: false });
   }
 
   let nextChat = now0 + 3000;
@@ -74,15 +79,26 @@ export function startLocalServer(collider: Collider, teams: number): (url: strin
     for (const b of bots) {
       const p = b.client.player;
       if (!p) continue;
+      if (!b.ready) {
+        b.ready = true;
+        if (b.vehicle) send(b.client, { t: 'vehicle', kind: b.vehicle }, now);
+      }
       if (now - b.pingAt > KEEPALIVE_MS) {
         b.pingAt = now;
         send(b.client, { t: 'ping', at: now }, now);
       }
       if (now < b.idleUntil) continue; // parado, conversando
       if (now > b.turnAt) {
-        b.dir = Math.hypot(p.x, p.z) > WANDER_RADIUS ? Math.atan2(-p.x, -p.z) : Math.random() * Math.PI * 2;
+        b.dir = Math.hypot(p.x, p.z) > WANDER_RADIUS * (b.vehicle ? 1.6 : 1) ? Math.atan2(-p.x, -p.z) : Math.random() * Math.PI * 2;
         b.turnAt = now + 2000 + Math.random() * 4000;
-        if (Math.random() < 0.35) b.idleUntil = now + 2000 + Math.random() * 6000;
+        if (!b.vehicle && Math.random() < 0.35) {
+          b.idleUntil = now + 2000 + Math.random() * 6000;
+          // Parado, às vezes dança ou acena.
+          const emote = Math.random() < 0.5 ? (Math.random() < 0.6 ? ANIM.dance : ANIM.wave) : 0;
+          b.seq = (b.seq + 1) & 0xffff;
+          world.queueInput(p, { dx: 0, dz: 0, run: false, seq: b.seq, emote });
+          continue;
+        }
       }
       b.seq = (b.seq + 1) & 0xffff;
       world.queueInput(p, { dx: Math.sin(b.dir), dz: Math.cos(b.dir), run: Math.random() < 0.002, seq: b.seq });

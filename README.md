@@ -86,6 +86,13 @@ Legenda: ⏳ não iniciada · 🔄 em andamento · ✅ concluída · ⚠️ conc
 > - **Tarefa 11:** o Overpass (OpenStreetMap) estava inacessível no ambiente de desenvolvimento, então `shared/map.json` vem de um mapa esquemático aproximado (`npm run map:esquematico`). Rode `npm run map` com acesso à internet para gerar o mapa real.
 > - **Tarefa 15:** com 1000 bots o tick ficou em p95 165 ms (meta: 25 ms). O perfil aponta `sendSnapshots` (seleção de interesse e um envio por cliente por tick) como o gargalo; detalhes no commit da tarefa.
 
+## Tela inicial e jogo
+
+- **Tela inicial:** escolha do time, prévia 3D do personagem (parado, andando, acenando, dançando; arrastar gira) e criador de visual: corpo (homem, mulher, tiozão), pele, cabelo, barba, roupa, bermuda ou calça, acessório e o que levar na mão (bandeira do Brasil, do time ou cartaz).
+- **Loja de personagens:** catálogo com filtros, busca e prévia 3D. São tipos originais (Tiozão do Zap, Vovó da Feira, Executivo de Brasília…), sem caricaturas de pessoas reais. Na pré-estreia o uso é grátis; a compra com moedas entra com o subprojeto de economia.
+- **No jogo:** emotes (<kbd>1</kbd> acenar, <kbd>2</kbd> dançar), veículos (carro de som e caminhão de som, com física própria e batucada que se ouve de longe), câmera aérea (<kbd>C</kbd>), minimapa e chat.
+- O visual viaja como um inteiro de 30 bits (`shared/looks.ts`) no perfil e na mensagem `names`; o veículo vai nos 4 bits altos do byte de animação do snapshot PERTO.
+
 ## Demonstração na Vercel
 
 A Vercel não mantém um servidor WebSocket. Por isso o deploy lá usa `npm run build:demo`: o servidor do jogo roda dentro do navegador, com 300 pessoas simuladas, e cada visitante vê a sua própria Esplanada. O jogo multiplayer de verdade precisa do servidor Node (`npm run build && npm start`) num host que aceite WebSocket.
@@ -142,5 +149,5 @@ As chaves ficam em variáveis de ambiente (`.env`) e nunca entram no repositóri
 ## Créditos
 
 - **Mapa:** © colaboradores do [OpenStreetMap](https://www.openstreetmap.org/copyright), licença ODbL.
-- **Personagem provisório:** "RobotExpressive", de Tomás Laulhé (Quaternius), licença CC0 1.0.
+- **Personagens e veículos:** modelos próprios, gerados em código (`client/src/scene/character.ts` e `vehicles.ts`).
 - **Imagens deste README** (logo, conceito visual e animação): feitas para o projeto, em SVG, em [`docs/assets`](docs/assets).

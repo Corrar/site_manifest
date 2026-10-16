@@ -2,7 +2,7 @@
 // mantendo a assinatura de getAccessToken().
 const KEY = 'manifest-dev-login';
 
-export type DevLogin = { nick: string; team: number };
+export type DevLogin = { nick: string; team: number; look: number };
 
 export function getDevLogin(): DevLogin | null {
   try {
@@ -34,5 +34,5 @@ export function clearDevLogin(): void {
 let current: DevLogin | null = getDevLogin();
 
 export async function getAccessToken(): Promise<string | null> {
-  return current ? `dev:${current.nick}:${current.team}` : null;
+  return current ? `dev:${current.nick}:${current.team}:${current.look ?? 0}` : null;
 }

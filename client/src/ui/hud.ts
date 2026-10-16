@@ -2,6 +2,11 @@ export class Hud {
   private readonly el = document.getElementById('hud') as HTMLElement;
   private readonly pingEl = document.getElementById('ping') as HTMLElement;
   private readonly bannerEl = document.getElementById('banner') as HTMLElement;
+  private readonly locSub = document.getElementById('loc-sub') as HTMLElement;
+
+  location(text: string): void {
+    if (this.locSub.textContent !== text) this.locSub.textContent = text;
+  }
 
   show(on: boolean): void {
     this.el.hidden = !on;
