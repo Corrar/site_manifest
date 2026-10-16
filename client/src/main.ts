@@ -2,6 +2,7 @@ import './style.css';
 import { FAR_HZ, INTERP_DELAY_MS, TICK_MS } from '../../shared/constants.ts';
 import { Collider, type MapData } from '../../shared/map.ts';
 import mapJson from '../../shared/map.json' with { type: 'json' };
+import teams from '../../shared/teams.json' with { type: 'json' };
 import { NEAR_TYPE, type FarSnapshot, type NearSnapshot, type ServerMessage } from '../../shared/protocol.ts';
 import { clearDevLogin, getAccessToken } from './auth.ts';
 import { Input } from './input.ts';
@@ -47,8 +48,15 @@ let selfId = 0;
 let myTeam = 0;
 let predictor: Predictor | null = null;
 
+// `vite build --mode demo` (deploy estático, ex.: Vercel): o servidor roda no próprio navegador, com bots.
+const DEMO = import.meta.env.MODE === 'demo';
+const localSocket = DEMO ? (await import('./demo/local-server.ts')).startLocalServer(collider, teams.length) : undefined;
+if (DEMO) document.getElementById('demo-note')!.hidden = false;
+
 const wsUrl = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`;
-const net = new GameConnection(wsUrl, { message: onMessage, snapshot: onSnapshot, status: onStatus }, getAccessToken);
+const net = new GameConnection(
+  wsUrl, { message: onMessage, snapshot: onSnapshot, status: onStatus }, getAccessToken, localSocket,
+);
 const lobby = new Lobby({ play: () => void net.join(false), watch: () => void net.join(true) });
 const chat = new ChatPanel((text) => net.send({ t: 'chat', text }));
 
