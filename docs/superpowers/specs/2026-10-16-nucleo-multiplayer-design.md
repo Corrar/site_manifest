@@ -6,7 +6,7 @@ Data: 2026-10-16 · Status: aguardando revisão
 
 Jogo 3D multiplayer no navegador, para lançamento público: uma manifestação online na Esplanada dos Ministérios (Brasília), com times políticos reais. Inspirado no formato do Paulista Livre (manifestacao.com), mas com código e assets próprios — nada do concorrente é reaproveitado.
 
-Este documento cobre só o **núcleo**: entrar com apelido e time (ou só assistir), andar na Esplanada vendo os outros, e o chat da avenida. Todo o resto vira subprojeto próprio (ver "Fora do escopo").
+Este documento cobre só o **núcleo**: entrar com a conta (ou só assistir, sem login), andar na Esplanada vendo os outros e o chat da avenida. Contas, economia e as mecânicas pay-to-win estão em [contas, economia e pay-to-win](2026-10-16-contas-economia-p2w-design.md).
 
 **Calendário:** o 2º turno é em 2026-10-25. O lançamento público acontece depois dessa data, para não ser enquadrado como propaganda eleitoral.
 
@@ -20,7 +20,8 @@ Este documento cobre só o **núcleo**: entrar com apelido e time (ou só assist
 | Rede | Biblioteca `ws`, um único processo, um WebSocket em `/ws` |
 | Cliente | Vite + Three.js; interface em HTML/CSS puro, sem framework |
 | Testes | Vitest |
-| Persistência | Nenhuma no núcleo (sem contas, sem banco); chat em memória + log em arquivo |
+| Login | Supabase Auth; jogar exige login, assistir não |
+| Persistência | Supabase Postgres para perfil e inventário, lidos no `join`; posições e chat em memória + log do chat em arquivo |
 | Hospedagem | Decidida depois; o processo serve `client/dist` e `/ws` na porta `PORT` |
 | Times | Dados em `shared/teams.json` (nome, cor, símbolo), trocáveis sem mexer em código |
 
@@ -82,7 +83,7 @@ Do cliente para o servidor:
 | `t` | Campos | Quando |
 |---|---|---|
 | `lobby` | — | ao abrir a página, antes de entrar |
-| `join` | `nick`, `team` (índice), `spectate` (bool), `token` (string ou null) | entrar ou retomar |
+| `join` | `auth` (access token do Supabase; obrigatório para jogar), `spectate` (bool), `token` (token de retomada ou null) | entrar ou retomar; apelido, time e visual vêm do perfil da conta |
 | `input` | `dx`, `dz` ∈ [-1,1] (direção no mundo), `run` (bool), `seq` (0–65535, circular) | quando a intenção muda, e a cada 1 s como "ainda aqui"; no máximo 20/s |
 | `view` | `x`, `z` | espectador: posição da câmera, no máximo 5/s |
 | `chat` | `text` | enviar mensagem |
@@ -93,10 +94,10 @@ Do servidor para o cliente:
 | `t` | Campos |
 |---|---|
 | `stats` | `online`, `teams` (contagem por time) — para quem está no lobby |
-| `welcome` | `id`, `token`, `serverTime`, `spectator` (bool), `history` (últimas mensagens de chat), `full` (bool: entrou como espectador por lotação) |
+| `welcome` | `id`, `token`, `serverTime`, `spectator` (bool), `history` (últimas mensagens de chat), `full` (bool: entrou como espectador por lotação), `account` (`{nick, team, look}`, ou null para espectador sem login) |
 | `names` | `people`: `[{id, nick, team, look}]` — enviado uma vez quando o jogador entra no raio de alguém |
 | `chat` | `id`, `nick`, `team`, `text`, `at` |
-| `error` | `code` (`nick_invalid`, `team_invalid`, `rate_limited`, …), `message` |
+| `error` | `code` (`auth_required`, `auth_invalid`, `banned`, `no_profile`, `rate_limited`, …), `message` |
 | `pong` | `at`, `now` |
 | `restarting` | — (o servidor vai reiniciar; o cliente reconecta) |
 
@@ -142,7 +143,7 @@ Estimativa de pior caso, numa multidão densa: perto 64×10 B×20/s ≈ 13 KB/s,
 - **Colisão:** usa os mesmos polígonos de `map.json` que o cliente desenha. Os limites do mapa formam uma parede.
 - **Espectador:** não tem corpo. Sua área de interesse é a última `view`, que começa no centro do mapa.
 - **Retomada:** o `token` (aleatório, 128 bits) identifica o jogador por `RESUME_MS` depois da queda. Ao retomar, ele volta com o mesmo id, posição, time e apelido.
-- **Apelido:** o texto é normalizado (espaços nas pontas removidos e espaços internos colapsados), precisa ter entre `NICK_MIN` e `NICK_MAX` caracteres e passa pelo filtro de palavras. Se já estiver em uso, o servidor acrescenta um número.
+- **Conta:** no `join` de jogador, o servidor valida o `auth` (assinatura pelas chaves públicas do Supabase), carrega o perfil e o inventário e recusa conta banida ou sem perfil (`no_profile` leva o cliente ao cadastro). Um `join` com `spectate: true` não exige `auth`. A validação de apelido fica na spec de contas.
 - **Lotação:** com `MAX_PLAYERS` atingido, o `join` vira espectador e o `welcome` sai com `full: true`.
 - **Reinício:** ao receber SIGTERM, o servidor envia `restarting`, fecha as conexões e encerra.
 
@@ -158,7 +159,7 @@ Estimativa de pior caso, numa multidão densa: perto 64×10 B×20/s ≈ 13 KB/s,
 
 ## Cliente
 
-- **Lobby:** mostra os `stats` (online por time), a escolha de time, o campo de apelido e os botões "Entrar" e "Só quero assistir".
+- **Lobby:** mostra os `stats` (online por time) e os botões "Entrar" (login com Google ou e-mail/senha; no primeiro acesso, leva ao cadastro do perfil) e "Só quero assistir" (sem login).
 - **Interpolação:** os outros jogadores são desenhados `INTERP_DELAY_MS` no passado, interpolando entre os dois snapshots que cercam esse instante. No snapshot "longe", a posição é interpolada entre as amostras de 2 Hz.
 - **Predição:** o próprio jogador se move na hora, com a mesma função de movimento do servidor, compartilhada via `shared/`. A cada snapshot, o cliente reaplica os inputs ainda não confirmados (`seq` > `ackSeq`) a partir da posição do servidor. Diferenças pequenas são suavizadas em ~100 ms; acima de 2 m, a posição salta direto.
 - **Mapa:** `map.json` é carregado e os prédios são extrudados em poucas malhas mescladas (uma por material). O Congresso Nacional (duas torres, cúpula e tigela) e a Catedral são modelados em código com primitivas.
@@ -188,9 +189,9 @@ Estimativa de pior caso, numa multidão densa: perto 64×10 B×20/s ≈ 13 KB/s,
   - movimento e colisão (não atravessa parede, desliza ao longo dela);
   - grade de interesse (perto/longe corretos, `NEAR_MAX`, ordem por distância);
   - chat (filtro, intervalo, tamanho);
-  - validação e unicidade de apelido;
   - validação de mensagens malformadas.
-- **Integração:** sobe o servidor real numa porta livre e conecta 2 clientes `ws`. Verifica que:
+- **Integração:** sobe o servidor real numa porta livre e conecta 2 clientes `ws`, com tokens assinados por uma chave de teste e perfis de teste. Verifica que:
+  - um `join` de jogador sem `auth` é recusado, e um espectador sem `auth` é aceito;
   - os dois entram e um vê o outro no snapshot PERTO após mover;
   - o chat chega aos dois;
   - a reconexão com token devolve o mesmo id e a mesma posição;
@@ -199,20 +200,18 @@ Estimativa de pior caso, numa multidão densa: perto 64×10 B×20/s ≈ 13 KB/s,
 
 ## Critérios de pronto
 
-1. É possível abrir o site, ver o lobby com os números por time, escolher time e apelido, entrar na Esplanada, andar vendo os outros com apelido e usar o chat.
+1. É possível abrir o site, ver o lobby com os números por time, fazer login, entrar na Esplanada com o apelido e o time do perfil, andar vendo os outros com apelido e usar o chat.
 2. O modo espectador funciona: câmera de cima, sem avatar, recebendo a área da câmera.
 3. Com 1000 bots num processo, o tick fica em p95 < 25 ms, e o tráfego médio por cliente fica dentro da estimativa acima.
 4. Reconectar em até 30 s devolve o mesmo personagem.
 5. O jogo roda a ~30 fps num celular intermediário (verificação manual).
 6. Todos os testes unitários e de integração passam.
 
-## Fora do escopo (próximos subprojetos)
+## Fora do escopo do núcleo
 
-- Contas e login
-- Pagamentos via Pix e loja
+- Contas, economia, PvP, território e influência: ver [contas, economia e pay-to-win](2026-10-16-contas-economia-p2w-design.md)
 - Caricaturas e skins
 - Veículos
-- PvP
 - Pichação
 - Voz no palanque
 - Telões e anúncios
