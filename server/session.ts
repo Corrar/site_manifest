@@ -197,6 +197,8 @@ export class Hub {
         this.kick(other, 4001, 'Conectado em outra aba');
       }
       this.owner.set(player.id, c);
+      // Retomada: apelido, time ou visual podem ter mudado; quem já conhecia este id recebe `names` de novo.
+      for (const o of this.clients) if (o !== c) o.known.delete(player.id);
       c.player = player;
       c.state = 'player';
     } else {

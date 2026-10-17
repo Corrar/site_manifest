@@ -129,8 +129,9 @@ export class CharacterPreview {
 
   private resize(): void {
     const box = this.canvas.parentElement!.getBoundingClientRect();
-    const w = Math.max(1, box.width);
-    const h = Math.max(1, box.height);
+    if (box.width < 1 || box.height < 1) return; // tela escondida: mantém o tamanho anterior
+    const w = box.width;
+    const h = box.height;
     this.renderer.setSize(w, h, false);
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';

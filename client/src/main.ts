@@ -114,8 +114,10 @@ byId('tool-look').onclick = () => location.reload(); // volta para a tela inicia
 addEventListener('pointerdown', () => sound.unlock());
 addEventListener('keydown', (e) => {
   sound.unlock();
-  if (!joined || spectator) return;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return; // segurar a tecla não repete o atalho
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  if (joined && spectator && e.code === 'KeyC') return toggleAerial();
+  if (!joined || spectator) return;
   if (e.code === 'Digit1') emote(ANIM.wave);
   else if (e.code === 'Digit2') emote(ANIM.dance);
   else if (e.code === 'KeyC') toggleAerial();
@@ -123,7 +125,7 @@ addEventListener('keydown', (e) => {
 });
 
 function emote(anim: number): void {
-  if (!predictor || spectator || predictor.state.vehicle) return;
+  if (!predictor || spectator || predictor.state.vehicle || selfEmote === anim) return;
   selfEmote = anim;
   net.send({ t: 'input', ...predictor.apply({ dx: 0, dz: 0, run: false }), emote: anim });
 }
@@ -143,6 +145,10 @@ function toggleAerial(): void {
 }
 
 function applyCamera(): void {
+  if (rig.spectator) {
+    rig.height = aerial ? 40 : 120; // espectador: alterna entre bem alto e mais perto da multidão
+    return;
+  }
   const v = predictor?.state.vehicle ?? 0;
   rig.distance = aerial ? 32 : [7, 11, 17][v] ?? 7;
   rig.pitch = aerial ? 1.0 : v ? 0.32 : 0.35;
@@ -169,6 +175,10 @@ function onMessage(m: ServerMessage): void {
       myTeam = m.account?.team ?? 0;
       myLook = m.account?.look ?? 0;
       predictor = null;
+      // O servidor zera emote e veículo quando a conexão cai; o estado volta a vir dos snapshots.
+      selfEmote = 0;
+      wasMoving = false;
+      acc = 0;
       rig.spectator = m.spectator;
       rig.focus.set(0, 0, 0);
       input.enabled = !m.spectator;
@@ -311,9 +321,15 @@ function frame(now: number): void {
   // Som: o veículo mais "alto" para quem escuta (volume cai com a distância até o alcance dele).
   const ear = self ?? { x: rig.focus.x, z: rig.focus.z };
   let loud = 0;
-  for (const v of vehicles) loud = Math.max(loud, (1 - Math.hypot(v.x - ear.x, v.z - ear.z) / v.range) ** 2);
+  for (const v of vehicles) loud = Math.max(loud, Math.max(0, 1 - Math.hypot(v.x - ear.x, v.z - ear.z) / v.range) ** 2);
   sound.update(joined ? loud : 0);
 
+  // Plano próximo da câmera conforme a distância: de longe, camadas planas a poucos cm brigam (z-fighting).
+  const near = !joined ? 4 : rig.spectator ? Math.max(1, rig.height * 0.02) : aerial ? 0.6 : 0.3;
+  if (stage.camera.near !== near) {
+    stage.camera.near = near;
+    stage.camera.updateProjectionMatrix();
+  }
   if (!joined) {
     // Tela inicial: a Esplanada vista do alto, girando devagar.
     const a = now / 1000 * 0.04;

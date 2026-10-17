@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ANIM } from '../../../shared/constants.ts';
-import { unpackLook } from '../../../shared/looks.ts';
+import { DEFAULT_LOOK, packLook, unpackLook } from '../../../shared/looks.ts';
 import teams from '../../../shared/teams.json' with { type: 'json' };
 import { wrapAngle } from '../../../shared/movement.ts';
 import { buildCharacter, type CharacterTemplate } from './character.ts';
@@ -22,33 +22,51 @@ type Avatar = {
   labelText: string;
 };
 
-const TEMPLATE_MAX = 200;
+type Entry = { tpl: CharacterTemplate; refs: number; used: number };
 
-/** Até NEAR_MAX personagens animados. Um modelo por combinação de visual e time, reaproveitado por clones. */
+/** Montar um visual novo custa ~10 ms; mais que isso por quadro vira travada quando a multidão chega perto. */
+const BUILDS_PER_FRAME = 2;
+const TEMPLATE_KEEP = 96; // modelos guardados sem uso antes de descartar a geometria
+const POOL_MAX = 48; // avatares prontos guardados para reaproveitar
+
+const keyOf = (v: AvatarPose) => (v.vehicle ? `v${v.vehicle}|${v.team}` : `${v.look}|${v.team}`);
+const DEFAULT_PACKED = packLook(DEFAULT_LOOK);
+
+/**
+ * Até NEAR_MAX personagens animados. Um modelo por combinação de visual e time, clonado para cada pessoa.
+ * Enquanto o modelo de alguém não fica pronto, ele aparece com o visual padrão do time.
+ */
 export class Avatars {
-  private readonly templates = new Map<string, CharacterTemplate>();
+  private readonly templates = new Map<string, Entry>();
   private readonly active = new Map<number, Avatar>();
-  private readonly pools = new Map<string, Avatar[]>();
+  private readonly pool: Avatar[] = [];
   private readonly scene: THREE.Scene;
+  private builds = 0;
+  private frame = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
   }
 
   sync(visible: Map<number, AvatarPose>, names: Map<number, { nick: string }>, dt: number, selfId: number): void {
+    this.frame++;
+    this.builds = 0;
     for (const [id, a] of this.active) if (!visible.has(id)) this.release(id, a);
-    for (const [id, v] of visible) {
-      const key = v.vehicle ? `v${v.vehicle}|${v.team}` : `${v.look}|${v.team}`;
+    // O próprio jogador primeiro, para nunca ficar com o substituto.
+    const order = [...visible].sort(([a], [b]) => (a === selfId ? -1 : b === selfId ? 1 : 0));
+    for (const [id, v] of order) {
+      const want = keyOf(v);
       let a = this.active.get(id);
-      if (a && a.key !== key) {
-        this.release(id, a);
-        a = undefined;
+      if (!a || a.key !== want) {
+        const next = this.acquire(want, v, id === selfId);
+        if (next) {
+          if (a) this.release(id, a);
+          a = next;
+          a.root.rotation.y = v.yaw;
+          this.active.set(id, a);
+        }
       }
-      if (!a) {
-        a = this.acquire(key, v);
-        a.root.rotation.y = v.yaw;
-        this.active.set(id, a);
-      }
+      if (!a) continue;
       a.root.position.set(v.x, 0, v.z);
       if (a.vehicle) {
         // Veículos giram suave (a direção chega em 8 bits e a predição vira em degraus de tick).
@@ -69,27 +87,43 @@ export class Avatars {
     }
   }
 
-  private template(key: string, v: AvatarPose): CharacterTemplate {
-    let t = this.templates.get(key);
-    if (!t) {
-      if (this.templates.size >= TEMPLATE_MAX) this.templates.clear(); // os clones ativos mantêm a geometria viva
-      const team = teams[v.team] ?? teams[0];
-      t = v.vehicle
-        ? { root: buildVehicle(v.vehicle, team), clips: [], height: VEHICLE_HEIGHT[v.vehicle] ?? 3 }
-        : buildCharacter(unpackLook(v.look), team);
-      this.templates.set(key, t);
-    }
-    return t;
-  }
-
-  private acquire(key: string, v: AvatarPose): Avatar {
-    const pooled = this.pools.get(key)?.pop();
-    if (pooled) {
+  /** Avatar com o modelo pedido, ou com o substituto do time se o orçamento do quadro acabou. null se nem isso. */
+  private acquire(key: string, v: AvatarPose, urgent: boolean): Avatar | null {
+    const i = this.pool.findLastIndex((p) => p.key === key);
+    if (i >= 0) {
+      const [pooled] = this.pool.splice(i, 1);
       this.scene.add(pooled.root);
       return pooled;
     }
-    const t = this.template(key, v);
-    const vehicle = v.vehicle > 0;
+    const entry = this.template(key, v, urgent);
+    if (entry) return this.instantiate(key, entry, v.vehicle > 0);
+    // Substituto: o visual padrão do time (um por time, montado uma vez).
+    const fallback = `${DEFAULT_PACKED}|${v.team}`;
+    if (v.vehicle || key === fallback) return null;
+    const fb = this.template(fallback, { ...v, look: DEFAULT_PACKED }, true);
+    return fb ? this.instantiate(fallback, fb, false) : null;
+  }
+
+  private template(key: string, v: AvatarPose, urgent: boolean): Entry | null {
+    let e = this.templates.get(key);
+    if (!e) {
+      if (!urgent && this.builds >= BUILDS_PER_FRAME) return null;
+      this.builds++;
+      const team = teams[v.team] ?? teams[0];
+      const tpl: CharacterTemplate = v.vehicle
+        ? { root: buildVehicle(v.vehicle, team), clips: [], height: VEHICLE_HEIGHT[v.vehicle] ?? 3 }
+        : buildCharacter(unpackLook(v.look), team);
+      e = { tpl, refs: 0, used: this.frame };
+      this.templates.set(key, e);
+      this.evictTemplates();
+    }
+    e.used = this.frame;
+    return e;
+  }
+
+  private instantiate(key: string, e: Entry, vehicle: boolean): Avatar {
+    e.refs++;
+    const t = e.tpl;
     const root = (vehicle ? t.root.clone() : cloneSkinned(t.root)) as THREE.Group;
     const mixer = new THREE.AnimationMixer(root);
     const actions = t.clips.map((c) => mixer.clipAction(c));
@@ -118,8 +152,28 @@ export class Avatars {
     this.active.delete(id);
     this.scene.remove(a.root);
     this.setLabel(a, '', 0);
-    let pool = this.pools.get(a.key);
-    if (!pool) this.pools.set(a.key, (pool = []));
-    if (pool.length < 8) pool.push(a);
+    this.pool.push(a);
+    while (this.pool.length > POOL_MAX) this.destroy(this.pool.shift()!);
+  }
+
+  /** Descarta um avatar guardado: animações, esqueleto e, se ninguém mais usa, o modelo dele. */
+  private destroy(a: Avatar): void {
+    a.mixer.stopAllAction();
+    a.mixer.uncacheRoot(a.root);
+    a.root.traverse((o) => (o as THREE.SkinnedMesh).skeleton?.dispose());
+    const e = this.templates.get(a.key); // a geometria é do modelo: só sai quando ele for despejado
+    if (e) e.refs--;
+    this.evictTemplates();
+  }
+
+  /** Mantém no máximo TEMPLATE_KEEP modelos; descarta os sem uso há mais tempo e sem clones vivos. */
+  private evictTemplates(): void {
+    if (this.templates.size <= TEMPLATE_KEEP) return;
+    const idle = [...this.templates].filter(([, e]) => e.refs <= 0).sort((a, b) => a[1].used - b[1].used);
+    for (const [key, e] of idle) {
+      if (this.templates.size <= TEMPLATE_KEEP) break;
+      this.templates.delete(key);
+      e.tpl.root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+    }
   }
 }

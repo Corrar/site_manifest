@@ -221,3 +221,20 @@ describe('Hub: veículos', () => {
     expect(world.players.size).toBe(0);
   });
 });
+
+describe('Hub: retomada com visual novo', () => {
+  it('quem já conhecia o jogador recebe names com o visual novo', async () => {
+    const { hub, connect, msg } = setup();
+    const a = connect();
+    const b = connect();
+    await msg(a, { t: 'join', auth: 'dev:Ana:0:0' });
+    await msg(b, { t: 'join', auth: 'dev:Bia:1' });
+    hub.tick(50);
+    hub.close(a.client, 100);
+    const a2 = connect(200);
+    await msg(a2, { t: 'join', auth: 'dev:Ana:0:9' }, 200);
+    hub.tick(250);
+    const people = b.conn.texts.filter((m) => m.t === 'names').flatMap((m) => m.people);
+    expect(people.filter((p) => p.nick === 'Ana').at(-1)?.look).toBe(9);
+  });
+});

@@ -23,6 +23,9 @@ function rng(seed: number): () => number {
   };
 }
 
+/** Camadas planas empilhadas a poucos cm: um deslocamento de profundidade por camada evita o z-fighting de longe. */
+const layer = (n: number) => ({ polygonOffset: true, polygonOffsetFactor: -n, polygonOffsetUnits: -n * 2 });
+
 // ---------- geometria auxiliar ----------
 
 /** Faixa ao longo de uma polilinha, entre os afastamentos `a` e `b` (esquerda positiva), com UV em metros/escala. */
@@ -99,8 +102,9 @@ function distToSegment(px: number, pz: number, a: Pt, b: Pt): number {
   return Math.hypot(px - (a[0] + t * dx), pz - (a[1] + t * dz));
 }
 
-function nearRoad(roads: Road[], x: number, z: number, margin: number): boolean {
+function nearRoad(roads: Road[], x: number, z: number, margin: number, except?: Road): boolean {
   for (const r of roads) {
+    if (r === except) continue;
     for (let i = 0; i < r.line.length - 1; i++) if (distToSegment(x, z, r.line[i], r.line[i + 1]) < r.width / 2 + margin) return true;
   }
   return false;
@@ -120,6 +124,23 @@ function* walk(line: Pt[], step: number, start = step / 2): Generator<{ x: numbe
     carry = (carry - len) % step;
     if (carry < 0) carry += step;
   }
+}
+
+/**
+ * Faixa paralela à via (calçada, meio-fio, borda) em pedaços de `step` metros, pulando os pedaços que caem
+ * dentro do leito de outra via: assim a calçada abre na boca dos acessos em vez de atravessá-los.
+ */
+function stripAlong(road: Road, roads: Road[], a: number, b: number, y: number, uvScale: number, step = 2): THREE.BufferGeometry[] {
+  const out: THREE.BufferGeometry[] = [];
+  const mid = (a + b) / 2;
+  for (const s of walk(road.line, step, step / 2)) {
+    const x = s.x - s.dz * mid;
+    const z = s.z + s.dx * mid;
+    if (nearRoad(roads, x, z, 0.3, road)) continue;
+    const g = ribbon([[s.x - s.dx * step / 2, s.z - s.dz * step / 2], [s.x + s.dx * step / 2, s.z + s.dz * step / 2]], a, b, y, uvScale);
+    if (g) out.push(g);
+  }
+  return out;
 }
 
 // ---------- partes do mapa ----------
@@ -151,21 +172,17 @@ function buildGround(map: MapData, scene: THREE.Scene, mobile: boolean): void {
   // Gramados cuidados (mais verdes) e água espelhada.
   const lawn = grassTexture();
   addMerged(scene, map.areas.filter((a) => a.kind === 'grass').map((a) => flatShape(a.outline, 0.03, 14)),
-    new THREE.MeshStandardMaterial({ map: lawn, color: '#9fc27a', roughness: 0.9 }), { cast: false, receive: true });
+    new THREE.MeshStandardMaterial({ map: lawn, color: '#9fc27a', roughness: 0.9, ...layer(1) }), { cast: false, receive: true });
   addMerged(scene, map.areas.filter((a) => a.kind === 'water').map((a) => flatShape(a.outline, 0.08, 8)),
-    new THREE.MeshStandardMaterial({ color: '#35617a', roughness: 0.06, metalness: 0.85 }), { cast: false, receive: true });
+    new THREE.MeshStandardMaterial({ color: '#35617a', roughness: 0.06, metalness: 0.85, ...layer(1) }), { cast: false, receive: true });
 }
 
 function buildRoads(map: MapData, scene: THREE.Scene): void {
   const asphalt = asphaltTexture();
   const paving = pavingTexture();
-  const roadMat = new THREE.MeshStandardMaterial({ map: asphalt, roughness: 0.92 });
-  const paint = new THREE.MeshStandardMaterial({
-    color: '#f2f2ee', roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
-  });
-  const yellow = new THREE.MeshStandardMaterial({
-    color: '#e6b422', roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
-  });
+  const roadMat = new THREE.MeshStandardMaterial({ map: asphalt, roughness: 0.92, ...layer(2) });
+  const paint = new THREE.MeshStandardMaterial({ color: '#f2f2ee', roughness: 0.7, ...layer(4) });
+  const yellow = new THREE.MeshStandardMaterial({ color: '#e6b422', roughness: 0.7, ...layer(4) });
   const roads: THREE.BufferGeometry[] = [];
   const white: THREE.BufferGeometry[] = [];
   const edges: THREE.BufferGeometry[] = [];
@@ -181,10 +198,7 @@ function buildRoads(map: MapData, scene: THREE.Scene): void {
     // Faixas: bordas contínuas, divisões tracejadas entre as faixas de 3,5 m.
     const lanes = Math.max(1, Math.round(r.width / 3.5));
     const lw = r.width / lanes;
-    for (const off of [h - 0.35, -h + 0.35]) {
-      const e = ribbon(r.line, off + 0.08, off - 0.08, y + 0.012, 1);
-      if (e) (main ? white : edges).push(e);
-    }
+    for (const off of [h - 0.35, -h + 0.35]) (main ? white : edges).push(...stripAlong(r, map.roads, off + 0.08, off - 0.08, y + 0.012, 1));
     for (let k = 1; k < lanes; k++) {
       const off = -h + k * lw;
       for (const s of walk(r.line, 9, 2)) white.push(quad(s.x - s.dz * off, s.z + s.dx * off, s.dx, s.dz, 4, 0.14, y + 0.012));
@@ -199,15 +213,13 @@ function buildRoads(map: MapData, scene: THREE.Scene): void {
     }
     if (r.width >= 10) {
       for (const side of [1, -1]) {
-        const w = ribbon(r.line, side * (h + 0.25), side * (h + 0.25 + SIDEWALK), 0.09, 6);
-        if (w) walks.push(w);
-        const c = ribbon(r.line, side * h, side * (h + 0.25), 0.16, 1);
-        if (c) curbs.push(c);
+        walks.push(...stripAlong(r, map.roads, side * (h + 0.25), side * (h + 0.25 + SIDEWALK), 0.09, 6));
+        curbs.push(...stripAlong(r, map.roads, side * h, side * (h + 0.25), 0.16, 1));
       }
     }
   }
   addMerged(scene, roads, roadMat, { cast: false, receive: true });
-  addMerged(scene, walks, new THREE.MeshStandardMaterial({ map: paving, roughness: 0.85 }), { cast: false, receive: true });
+  addMerged(scene, walks, new THREE.MeshStandardMaterial({ map: paving, roughness: 0.85, ...layer(3) }), { cast: false, receive: true });
   addMerged(scene, curbs, new THREE.MeshStandardMaterial({ color: '#cfcac0', roughness: 0.8 }), { cast: false, receive: true });
   addMerged(scene, white, paint, { cast: false, receive: true });
   addMerged(scene, edges, yellow, { cast: false, receive: true });
@@ -383,6 +395,7 @@ function buildVegetationAndProps(map: MapData, scene: THREE.Scene, mobile: boole
       for (const s of walk(road.line, 36, side > 0 ? 6 : 24)) {
         const x = s.x - s.dz * off;
         const z = s.z + s.dx * off;
+        if (nearRoad(map.roads, x, z, 1, road)) continue; // não planta poste na boca de outra via
         // braço aponta para o centro da via: direção (s.dz, -s.dx) * side
         const yaw = Math.atan2(s.dz * side, -s.dx * side);
         lamps.push(new THREE.Matrix4().compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(up, yaw), new THREE.Vector3(1, 1, 1)));

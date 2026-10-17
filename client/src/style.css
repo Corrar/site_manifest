@@ -107,7 +107,7 @@ body.in-game #topbar { display: none; }
   background: radial-gradient(ellipse at 50% 70%, rgba(80, 140, 98, 0.35), transparent 65%);
 }
 .showcase .display { position: relative; z-index: 1; max-width: 260px; }
-.preview { position: relative; flex: 1; min-height: 300px; cursor: grab; }
+.preview { position: relative; flex: 1; min-height: 300px; cursor: grab; touch-action: pan-y; }
 .preview:active { cursor: grabbing; }
 .showcase .preview { position: absolute; inset: 40px 0 70px; }
 .anim-bar { position: relative; z-index: 1; margin-top: auto; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
@@ -206,7 +206,11 @@ body.in-game #lobby-footer { display: none; }
 #minimap-box { position: absolute; left: 14px; bottom: 14px; padding: 8px; }
 #minimap { display: block; width: 180px; height: 180px; border-radius: 8px; background: #20301f; }
 .mm-foot { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.62rem; color: var(--muted); letter-spacing: 0.06em; }
-#toolbar { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; }
+/* Centralizada entre o minimapa (esquerda) e o chat (direita): quebra em duas linhas se faltar espaço. */
+#toolbar {
+  position: absolute; left: 224px; right: 388px; bottom: 14px; margin: 0 auto; width: fit-content;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 6px;
+}
 .tool { padding: 10px 14px; border: 0; border-radius: 8px; background: none; font-weight: 600; font-size: 0.86rem; white-space: nowrap; }
 .tool:hover, .tool.on { background: rgba(240, 210, 122, 0.16); color: var(--gold); }
 .tool small { opacity: 0.7; }
@@ -229,6 +233,16 @@ body.in-game #lobby-footer { display: none; }
 #joystick { position: fixed; z-index: 5; left: 24px; bottom: 220px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); touch-action: none; }
 #joystick .knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255, 255, 255, 0.45); }
 
+@media (min-width: 601px) and (max-width: 1100px) {
+  #chat { width: 300px; }
+  #toolbar { left: 14px; right: 328px; }
+  #minimap-box { display: none; }
+}
+@media (min-width: 601px) and (max-width: 820px) {
+  /* Sem espaço entre o chat e a borda: a barra sobe para o topo e os menus abrem para baixo. */
+  #toolbar { bottom: auto; top: 70px; left: 8px; right: 8px; transform: none; max-width: none; }
+  #toolbar .menu { bottom: auto; top: calc(100% + 8px); }
+}
 @media (max-width: 900px) {
   .creator { grid-template-columns: 1fr; height: auto; }
   .showcase { min-height: 420px; }
@@ -248,7 +262,9 @@ body.in-game #lobby-footer { display: none; }
   .team-card strong { font-size: 0.9rem; }
   #lobby-footer span:first-child { display: none; }
   #minimap-box { display: none; }
-  #toolbar { bottom: auto; top: 64px; }
+  #toolbar { bottom: auto; top: 70px; left: 8px; right: 8px; transform: none; max-width: none; }
+  #toolbar .menu { bottom: auto; top: calc(100% + 8px); }
+  #loc-card { left: 8px; right: 8px; top: 8px; }
   #chat { left: 14px; right: auto; bottom: 14px; }
   #chat-log { max-height: 18vh; }
   .tool { padding: 8px 9px; font-size: 0.78rem; }

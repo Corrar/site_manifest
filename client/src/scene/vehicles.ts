@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { VEHICLE } from '../../../shared/constants.ts';
 
 // Carro de som e caminhão de som, montados com caixas. Olham para +Z, como os personagens.
@@ -127,6 +128,34 @@ function truck(team: Team): THREE.Group {
 
 export const VEHICLE_HEIGHT = [0, 2.6, 6.6];
 
+/** Junta as peças por material: o caminhão cai de ~200 malhas (e o dobro de chamadas com sombra) para ~10. */
+function mergeByMaterial(src: THREE.Group): THREE.Group {
+  src.updateMatrixWorld(true);
+  const byMat = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  src.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld);
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+    const mat = m.material as THREE.Material;
+    const list = byMat.get(mat);
+    if (list) list.push(g);
+    else byMat.set(mat, [g]);
+    m.geometry.dispose();
+  });
+  const out = new THREE.Group();
+  for (const [mat, geos] of byMat) {
+    const merged = mergeGeometries(geos, false);
+    for (const g of geos) g.dispose();
+    if (!merged) continue;
+    const mesh = new THREE.Mesh(merged, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    out.add(mesh);
+  }
+  return out;
+}
+
 export function buildVehicle(kind: number, team: Team): THREE.Group {
-  return kind === VEHICLE.truck ? truck(team) : car(team);
+  return mergeByMaterial(kind === VEHICLE.truck ? truck(team) : car(team));
 }

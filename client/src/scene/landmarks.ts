@@ -5,6 +5,8 @@ import { brazilFlagTexture, concreteTexture, FACADE_TILE, glassFacadeTexture } f
 // Marcos modelados à mão. A colisão vem dos `footprint` em shared/landmarks.ts.
 
 const white = new THREE.MeshStandardMaterial({ color: '#f4f3ee', roughness: 0.55 });
+/** Para superfícies sem espessura (tigela da Câmara, colunas da Catedral), vistas por dentro e por fora. */
+const whiteTwoSided = new THREE.MeshStandardMaterial({ color: '#f4f3ee', roughness: 0.55, side: THREE.DoubleSide });
 const water = new THREE.MeshStandardMaterial({ color: '#2f5f7c', roughness: 0.05, metalness: 0.9 });
 
 function mesh(geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, opts: { sy?: number; rot?: THREE.Euler } = {}) {
@@ -42,7 +44,7 @@ function congresso(): THREE.Group {
   const ramp = new THREE.BoxGeometry(12, 0.6, 52);
   g.add(mesh(ramp, white, -52, 4.6, 0, { rot: new THREE.Euler(0, Math.PI / 2, Math.atan2(9, 52)) }));
   // Câmara (sul): tigela virada para cima. Senado (norte): cúpula.
-  g.add(mesh(new THREE.SphereGeometry(31, 48, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), white, 0, 25, 52, { sy: 0.5 }));
+  g.add(mesh(new THREE.SphereGeometry(31, 48, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), whiteTwoSided, 0, 25, 52, { sy: 0.5 }));
   g.add(mesh(new THREE.CylinderGeometry(6, 9, 6, 24), white, 0, 12, 52));
   g.add(mesh(new THREE.SphereGeometry(20, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), white, 0, 9.6, -52, { sy: 0.62 }));
   // Torres gêmeas (28 andares) a leste, ligadas no meio
@@ -64,7 +66,7 @@ function catedral(): THREE.Group {
   });
   g.add(mesh(new THREE.LatheGeometry(profile.map((v) => new THREE.Vector2(v.x * 0.97, v.y)), 48), glass, 0, 0, 0));
   for (let i = 0; i < 16; i++) {
-    g.add(mesh(new THREE.LatheGeometry(profile, 2, (i / 16) * Math.PI * 2, 0.14), white, 0, 0, 0)); // 16 colunas
+    g.add(mesh(new THREE.LatheGeometry(profile, 2, (i / 16) * Math.PI * 2, 0.14), whiteTwoSided, 0, 0, 0)); // 16 colunas
   }
   g.add(mesh(new THREE.CylinderGeometry(29, 29, 0.4, 48), white, 0, 0.2, 0)); // laje de base
   // Espelho d'água em volta (anel) e campanário ao lado

@@ -111,27 +111,32 @@ export class Lobby {
     }
   }
 
+  /** Cria os cards de time uma vez; depois só atualiza contagem e seleção (recriar a cada `stats` perdia cliques). */
   private renderTeams(): void {
-    this.teamCards.replaceChildren(...teams.map((t, i) => {
-      const b = document.createElement('button');
-      b.className = `team-card${i === this.team ? ' on' : ''}`;
-      const flag = document.createElement('span');
-      flag.className = 'flag';
-      flag.style.setProperty('--c', t.color);
-      flag.style.setProperty('--a', t.accent);
-      const txt = document.createElement('span');
-      const name = document.createElement('strong');
-      name.textContent = t.name;
-      const n = document.createElement('small');
-      n.textContent = `${(this.counts[i] ?? 0).toLocaleString('pt-BR')} online`;
-      txt.append(name, n);
-      b.append(flag, txt);
-      b.onclick = () => {
-        this.team = i;
-        this.render();
-      };
-      return b;
-    }));
+    if (this.teamCards.children.length !== teams.length) {
+      this.teamCards.replaceChildren(...teams.map((t, i) => {
+        const b = document.createElement('button');
+        b.className = 'team-card';
+        const flag = document.createElement('span');
+        flag.className = 'flag';
+        flag.style.setProperty('--c', t.color);
+        flag.style.setProperty('--a', t.accent);
+        const txt = document.createElement('span');
+        const name = document.createElement('strong');
+        name.textContent = t.name;
+        txt.append(name, document.createElement('small'));
+        b.append(flag, txt);
+        b.onclick = () => {
+          this.team = i;
+          this.render();
+        };
+        return b;
+      }));
+    }
+    [...this.teamCards.children].forEach((b, i) => {
+      b.classList.toggle('on', i === this.team);
+      b.querySelector('small')!.textContent = `${(this.counts[i] ?? 0).toLocaleString('pt-BR')} online`;
+    });
   }
 
   private renderBodies(openShop: () => void): void {
