@@ -8,7 +8,8 @@ import {
   NEAR_TYPE, unpackAnim, type FarSnapshot, type NearSnapshot, type ServerMessage,
 } from '../../shared/protocol.ts';
 import { SoundSystem } from './audio.ts';
-import { clearDevLogin, getAccessToken } from './auth.ts';
+import { clearDevLogin, getAccessToken, getDevLogin, setDevLogin } from './auth.ts';
+import { FLAGS, packLook, unpackLook } from '../../shared/looks.ts';
 import { Input } from './input.ts';
 import { TickClock, Track } from './interp.ts';
 import { GameConnection, type ConnStatus } from './net.ts';
@@ -92,10 +93,80 @@ help.onclick = (e) => {
 };
 
 function toggleMenu(id: string): void {
-  for (const m of ['anim-menu', 'vehicle-menu']) byId(m).hidden = m === id ? !byId(m).hidden : true;
+  for (const m of ['anim-menu', 'vehicle-menu', 'flag-menu']) byId(m).hidden = m === id ? !byId(m).hidden : true;
 }
 byId('tool-anim').onclick = () => toggleMenu('anim-menu');
 byId('tool-vehicle').onclick = () => toggleMenu('vehicle-menu');
+byId('tool-flag').onclick = () => toggleMenu('flag-menu');
+addEventListener('pointerdown', (e) => {
+  if (!(e.target instanceof Element) || !e.target.closest('.tool-group')) toggleMenu('');
+});
+
+// Aviso curto na tela (recursos ainda não construídos e dicas).
+let toastTimer = 0;
+function toast(text: string): void {
+  const el = byId('toast');
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => (el.hidden = true), 2600);
+}
+for (const b of document.querySelectorAll<HTMLElement>('[data-soon]')) {
+  b.addEventListener('click', () => toast(`${b.dataset.soon}: chega com a loja e as contas. Hoje tudo é grátis na pré-estreia.`));
+}
+
+// Cartaz / bandeira: o visual é fixo durante a manifestação; a escolha fica salva e vale ao voltar para a Esplanada.
+const flagMenu = byId('flag-menu');
+flagMenu.replaceChildren(...FLAGS.map((name, i) => {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.onclick = () => {
+    const saved = getDevLogin();
+    if (saved) setDevLogin({ ...saved, look: packLook({ ...unpackLook(saved.look), flag: i }) });
+    toggleMenu('');
+    backToLobby(`${name}: escolha salva. Voltando à tela inicial para trocar o visual…`);
+  };
+  return b;
+}));
+
+function backToLobby(msg?: string): void {
+  if (msg) toast(msg);
+  setTimeout(() => location.reload(), msg ? 900 : 0); // recarregar volta para a tela inicial com o visual salvo
+}
+byId('gb-back').onclick = () => backToLobby();
+byId('gb-user').onclick = () => backToLobby();
+byId('chat-rename').onclick = () => backToLobby();
+byId('loc-close').onclick = () => (byId('loc-card').hidden = true);
+byId('gb-full').onclick = () => {
+  if (document.fullscreenElement) void document.exitFullscreen();
+  else void document.documentElement.requestFullscreen?.();
+};
+byId('zoom-in').onclick = () => rig.zoomBy(0.8);
+byId('zoom-out').onclick = () => rig.zoomBy(1.25);
+byId('zoom-home').onclick = () => {
+  rig.focus.set(0, 0, 0);
+  rig.yaw = Math.PI / 2;
+  rig.pitch = 0.35;
+  applyCamera();
+  rig.onSpectatorMove(0, 0);
+};
+
+// Chat: abas (Esplanada / por perto) e altura.
+const chatEl = byId('chat');
+for (const b of document.querySelectorAll<HTMLButtonElement>('[data-chat-tab]')) {
+  b.onclick = () => {
+    for (const o of document.querySelectorAll('[data-chat-tab]')) o.classList.toggle('on', o === b);
+    chatEl.classList.toggle('near', b.dataset.chatTab === 'near');
+  };
+}
+let chatHeight = 200;
+const setChatHeight = (h: number) => {
+  chatHeight = Math.min(480, Math.max(120, h));
+  byId('chat-log').style.height = `${chatHeight}px`;
+  byId('chat-height').textContent = `${chatHeight} px`;
+};
+byId('chat-smaller').onclick = () => setChatHeight(chatHeight - 40);
+byId('chat-bigger').onclick = () => setChatHeight(chatHeight + 40);
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-emote]')) {
   b.onclick = () => {
     emote(Number(b.dataset.emote));
@@ -111,11 +182,12 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('[data-vehicle]')) 
 const soundBtn = byId<HTMLButtonElement>('tool-sound');
 soundBtn.onclick = () => {
   sound.muted = !sound.muted;
-  soundBtn.textContent = sound.muted ? 'Som: desligado' : 'Som: ligado';
+  soundBtn.textContent = sound.muted ? '🔇' : '🔊';
+  soundBtn.title = sound.muted ? 'Som desligado' : 'Som ligado';
 };
 const cameraBtn = byId<HTMLButtonElement>('tool-camera');
 cameraBtn.onclick = () => toggleAerial();
-byId('tool-look').onclick = () => location.reload(); // volta para a tela inicial com o visual salvo
+byId('tool-look').onclick = () => backToLobby();
 
 addEventListener('pointerdown', () => sound.unlock());
 addEventListener('keydown', (e) => {
@@ -152,7 +224,9 @@ function toggleAerial(): void {
 
 function applyCamera(): void {
   if (rig.spectator) {
-    rig.height = aerial ? 40 : 120; // espectador: alterna entre bem alto e mais perto da multidão
+    // Espectador: "Aéreo" sobe e olha mais de cima; o normal é uma vista inclinada, com os prédios no quadro.
+    rig.height = aerial ? 320 : 140;
+    rig.spectatorPitch = aerial ? 1.25 : 0.62;
     return;
   }
   const v = predictor?.state.vehicle ?? 0;
@@ -173,6 +247,13 @@ function onMessage(m: ServerMessage): void {
   switch (m.t) {
     case 'stats':
       lobby.stats(m.online, m.teams);
+      byId('gb-online').replaceChildren(...teams.map((t, i) => {
+        const sp = document.createElement('span');
+        const dot = document.createElement('i');
+        dot.style.setProperty('--c', t.color);
+        sp.append(dot, String(m.teams[i] ?? 0));
+        return sp;
+      }));
       break;
     case 'welcome':
       joined = true;
@@ -193,8 +274,15 @@ function onMessage(m: ServerMessage): void {
       lobby.show(false);
       shop.close();
       hud.show(true);
-      for (const id of ['tool-vehicle', 'tool-anim', 'tool-look']) byId(id).hidden = m.spectator;
+      for (const id of ['tool-vehicle', 'tool-anim', 'tool-look', 'tool-flag', 'tool-spray', 'tool-pvp']) byId(id).hidden = m.spectator;
+      byId('loc-card').hidden = false;
+      byId('hint').textContent = m.spectator
+        ? 'Arrastar move · botão direito gira e inclina · roda aproxima · setas deslocam · Q/E giram · R/F inclinam'
+        : 'WASD anda · Shift corre · arrastar gira · botão direito inclina · roda aproxima · Q/E giram';
+      byId('gb-user').textContent = m.account?.nick ?? 'Entrar';
+      byId('chat-nick').textContent = m.account?.nick ?? `Visitante ${m.id}`;
       chat.show(true, !m.spectator);
+      applyCamera();
       chat.clear();
       for (const e of m.history) chat.add(e);
       if (m.full) chat.system('A Esplanada está lotada: você está assistindo por enquanto.');
@@ -204,7 +292,7 @@ function onMessage(m: ServerMessage): void {
       for (const p of m.people) names.set(p.id, { nick: p.nick, team: p.team, look: p.look });
       break;
     case 'chat':
-      chat.add(m);
+      chat.add(m, m.id === selfId || nearIds.has(m.id));
       break;
     case 'error':
       if (joined) {
@@ -342,6 +430,7 @@ function frame(now: number): void {
     stage.camera.position.set(Math.cos(a) * 320, 170, Math.sin(a) * 320);
     stage.camera.lookAt(60, 0, 0);
   } else {
+    rig.tick(dtMs / 1000, spectator);
     rig.update(self);
   }
   followSun(stage, self?.x ?? rig.focus.x, self?.z ?? rig.focus.z);
@@ -352,6 +441,7 @@ function frame(now: number): void {
     lastMinimap = now;
     minimap.draw(self ?? rig.focus, [...dots, ...people], self && predictor ? { yaw: predictor.state.yaw } : null);
     const total = visible.size + people.length - (self ? 1 : 0);
+    byId('mm-count').textContent = `${total} na tela`;
     hud.location(spectator ? `Assistindo do alto · ${total} pessoas na tela` : `Você está na manifestação · ${total} por perto`);
   }
   requestAnimationFrame(frame);

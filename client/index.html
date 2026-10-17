@@ -134,7 +134,8 @@
         </header>
         <ul class="keys">
           <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> andar · <kbd>Shift</kbd> correr</li>
-          <li>Arrastar o mouse gira a câmera · roda dá zoom</li>
+          <li>Arrastar gira a câmera · botão direito ou <kbd>Shift</kbd> + arrastar inclina · roda dá zoom · <kbd>Q</kbd>/<kbd>E</kbd> giram</li>
+          <li>Assistindo do alto: setas deslocam, <kbd>R</kbd>/<kbd>F</kbd> inclinam, <kbd>+</kbd>/<kbd>−</kbd> aproximam, dois dedos giram e dão zoom</li>
           <li><kbd>1</kbd> acenar · <kbd>2</kbd> dançar</li>
           <li><kbd>C</kbd> câmera aérea · <kbd>Enter</kbd> conversar</li>
           <li>Veículos: <kbd>W</kbd> acelera, <kbd>A</kbd>/<kbd>D</kbd> vira, <kbd>S</kbd> dá ré · <kbd>F</kbd> desce</li>
@@ -144,20 +145,71 @@
     </div>
 
     <div id="hud" hidden>
+      <header id="gamebar">
+        <div class="brand small">
+          <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+            <rect x="4" y="27" width="32" height="5" rx="1" fill="currentColor" />
+            <rect x="21" y="6" width="5" height="21" rx="1" fill="currentColor" />
+            <rect x="28" y="6" width="5" height="21" rx="1" fill="currentColor" />
+            <path d="M5 27a8 6 0 0 1 15 0z" fill="var(--gold)" />
+          </svg>
+          <div><strong>MANIFEST</strong><span>ESPLANADA</span></div>
+        </div>
+        <nav class="gb-center">
+          <button id="gb-premium" class="gb-pill gold" data-soon="Premium">★ Premium</button>
+          <button id="gb-passes" class="gb-pill" data-soon="Passes">Passes</button>
+          <button id="gb-ads" class="gb-pill" data-soon="Anunciar no jogo (telões)">Anunciar no jogo · Telões</button>
+          <button id="gb-superchat" class="gb-pill" data-soon="Superchat">$ Superchat</button>
+          <div id="gb-online" class="online" title="Pessoas na Esplanada agora"></div>
+        </nav>
+        <div class="gb-right">
+          <button id="tool-sound" class="icon-btn" title="Som" aria-label="Som">🔊</button>
+          <button id="gb-full" class="icon-btn" title="Tela cheia" aria-label="Tela cheia">⛶</button>
+          <button id="tool-help" class="icon-btn" title="Ajuda" aria-label="Ajuda">?</button>
+          <button id="gb-user" class="pill">Entrar</button>
+          <button id="gb-back" class="pill back">← Voltar</button>
+        </div>
+      </header>
+
       <div id="loc-card" class="glass">
         <span class="dot"></span>
         <div>
           <strong>ESPLANADA DOS MINISTÉRIOS</strong>
           <span id="loc-sub">Chegando…</span>
         </div>
+        <button id="loc-close" class="x" aria-label="Fechar">×</button>
       </div>
+
+      <div id="zoom-ctl" class="glass">
+        <button id="zoom-in" aria-label="Aproximar">+</button>
+        <button id="zoom-out" aria-label="Afastar">−</button>
+        <button id="zoom-home" aria-label="Recentrar" title="Recentrar">⌂</button>
+      </div>
+
+      <aside id="side-panels">
+        <button class="panel glass" data-soon="Caminhada até o Congresso">
+          <b>⚑ Caminhada · inscrições em breve</b>
+        </button>
+        <div class="panel glass">
+          <b>Missões da Esplanada</b>
+          <small>Entre com sua conta para ganhar itens jogando</small>
+        </div>
+        <button class="panel glass" data-soon="Debates ao vivo">
+          <b>Debates ao vivo · 0</b>
+        </button>
+      </aside>
+
       <div id="minimap-box" class="glass">
+        <div class="mm-head"><span>ESPLANADA</span><span>© OSM · N ↑</span></div>
         <canvas id="minimap" width="180" height="180"></canvas>
-        <div class="mm-foot"><span>© OpenStreetMap</span><span id="ping"></span></div>
+        <div class="mm-foot"><span id="mm-count"></span><span id="ping"></span></div>
       </div>
+
+      <div id="bottom-center">
+      <p id="hint" class="glass">Arrastar gira · botão direito inclina · roda aproxima</p>
       <nav id="toolbar" class="glass">
         <div class="tool-group">
-          <button id="tool-vehicle" class="tool">Veículos <small>▴</small></button>
+          <button id="tool-vehicle" class="tool"><i>🚗</i>Veículos <small>▴</small></button>
           <div id="vehicle-menu" class="menu glass" hidden>
             <button data-vehicle="0">A pé <kbd>F</kbd></button>
             <button data-vehicle="1">Carro de som</button>
@@ -165,27 +217,45 @@
           </div>
         </div>
         <div class="tool-group">
-          <button id="tool-anim" class="tool">Animações <small>▴</small></button>
+          <button id="tool-flag" class="tool"><i>⚑</i>Cartaz / bandeira <small>▴</small></button>
+          <div id="flag-menu" class="menu glass" hidden></div>
+        </div>
+        <button id="tool-spray" class="tool" data-soon="Spray"><i>🖌</i>Spray</button>
+        <button id="tool-pvp" class="tool" data-soon="PvP"><i>⚔</i>PvP</button>
+        <div class="tool-group">
+          <button id="tool-anim" class="tool"><i>🕺</i>Animações <small>▴</small></button>
           <div id="anim-menu" class="menu glass" hidden>
             <button data-emote="3">Acenar <kbd>1</kbd></button>
             <button data-emote="4">Dançar <kbd>2</kbd></button>
           </div>
         </div>
-        <button id="tool-sound" class="tool">Som: ligado</button>
-        <button id="tool-camera" class="tool">Câmera aérea <kbd>C</kbd></button>
-        <button id="tool-look" class="tool">Visual</button>
-        <button id="tool-help" class="tool">Ajuda</button>
+        <span class="tool-sep"></span>
+        <button id="tool-look" class="tool"><i>👕</i>Customização</button>
+        <button id="tool-camera" class="tool"><i>◈</i>Aéreo <kbd>C</kbd></button>
       </nav>
+      </div>
     </div>
 
     <section id="chat" class="glass" hidden>
-      <header class="chat-head">Conversa na Esplanada</header>
+      <header class="chat-head">
+        <span>💬 Conversa na Esplanada</span>
+        <span class="chat-size">Altura <button id="chat-smaller" aria-label="Diminuir">−</button><b id="chat-height">200 px</b><button id="chat-bigger" aria-label="Aumentar">+</button></span>
+      </header>
+      <div class="chat-tabs">
+        <button data-chat-tab="all" class="on">Esplanada</button>
+        <button data-chat-tab="near">Por perto</button>
+        <span id="chat-live">ao vivo</span>
+      </div>
+      <div class="chat-me"><b id="chat-nick">Visitante</b><button id="chat-rename" class="link">Trocar apelido</button></div>
       <ol id="chat-log" aria-live="polite"></ol>
       <form id="chat-form">
+        <button type="button" id="chat-super" class="super" data-soon="Superchat" aria-label="Superchat">$</button>
         <input id="chat-input" maxlength="200" autocomplete="off" />
         <button aria-label="Enviar">➤</button>
       </form>
     </section>
+
+    <div id="toast" role="status" hidden></div>
 
     <div id="joystick" hidden><div class="knob"></div></div>
     <div id="banner" role="status" hidden></div>

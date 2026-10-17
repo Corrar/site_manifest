@@ -259,6 +259,65 @@ export function brickFacadeTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
+/** Telões de anúncio nas fachadas (proporção 2:1). `kind` escolhe a arte; sem marcas nem pessoas reais. */
+export function billboardTexture(kind: number): THREE.CanvasTexture {
+  const [c, g] = canvas(512, 256);
+  const arts: (() => void)[] = [
+    () => {
+      g.fillStyle = '#1f9d55';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#f0d27a';
+      g.font = '800 74px Impact, "Arial Narrow", sans-serif';
+      g.fillText('ANUNCIE', 36, 108);
+      g.fillText('AQUI', 36, 186);
+      g.fillStyle = '#eef5ef';
+      g.font = '600 26px system-ui, sans-serif';
+      g.fillText('a partir de R$ 50,00', 300, 180);
+      g.font = '500 18px system-ui, sans-serif';
+      g.fillText('Telões da Esplanada', 300, 212);
+    },
+    () => {
+      const grad = g.createLinearGradient(0, 0, 512, 256);
+      grad.addColorStop(0, '#13261b');
+      grad.addColorStop(1, '#2b4d36');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#f0d27a';
+      g.font = '800 92px Impact, "Arial Narrow", sans-serif';
+      g.fillText('MANIFEST', 40, 130);
+      g.fillStyle = '#eef5ef';
+      g.font = '600 24px system-ui, sans-serif';
+      g.fillText('SUA VOZ. SEU VISUAL. A ESPLANADA É SUA.', 40, 190);
+    },
+    () => {
+      g.fillStyle = '#0f1a2e';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#5f86b5';
+      g.fillRect(0, 196, 512, 60);
+      g.fillStyle = '#ffffff';
+      g.font = '800 64px Impact, "Arial Narrow", sans-serif';
+      g.fillText('SUA MARCA AQUI', 30, 120);
+      g.fillStyle = '#eef5ef';
+      g.font = '600 24px system-ui, sans-serif';
+      g.fillText('Anunciar no jogo · Telões', 30, 236);
+    },
+    () => {
+      g.fillStyle = '#b4432f';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#ffffff';
+      g.font = '800 70px Impact, "Arial Narrow", sans-serif';
+      g.fillText('PASSE DA', 40, 104);
+      g.fillText('MANIFESTAÇÃO', 40, 182);
+      g.font = '600 22px system-ui, sans-serif';
+      g.fillText('em breve', 400, 236);
+    },
+  ];
+  arts[kind % arts.length]();
+  const t = finish(c);
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
 /** Laje de cobertura com brita. Um ladrilho = 10 m. */
 export function roofTexture(): THREE.CanvasTexture {
   const r = rng(97);

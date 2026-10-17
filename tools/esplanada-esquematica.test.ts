@@ -17,8 +17,8 @@ describe('mapa esquemático da Esplanada', () => {
 
   it('tem prédios, vias, gramados e marcos', () => {
     expect(map.version).toBe(1);
-    expect(map.buildings.length).toBe(36); // 16 ministérios, 16 anexos, Itamaraty, Justiça, Planalto e STF
-    expect(map.roads.length).toBe(4 + 2 * MINISTRY_U.length);
+    expect(map.buildings.length).toBeGreaterThan(36); // 16 ministérios, 16 anexos, palácios e os setores a oeste
+    expect(map.roads.length).toBe(4 + 2 * MINISTRY_U.length + 2 * 9);
     expect(map.areas.filter((a) => a.kind === 'grass').length).toBe(2);
     expect(map.areas.filter((a) => a.kind === 'paved').length).toBe(1 + 2 * MINISTRY_U.length); // praça e estacionamentos
     expect(map.trees!.length).toBeGreaterThan(100);

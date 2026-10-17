@@ -5,8 +5,8 @@ import { pointInPolygon } from '../../../shared/geometry.ts';
 import { Collider, type MapData, type Road } from '../../../shared/map.ts';
 import type { Building, FacadeMaterial } from '../../../shared/map.ts';
 import {
-  asphaltTexture, brickFacadeTexture, concreteTexture, FACADE_TILE, glassFacadeTexture, grassTexture, pavingTexture,
-  roofTexture, windowsFacadeTexture,
+  asphaltTexture, billboardTexture, brickFacadeTexture, concreteTexture, FACADE_TILE, glassFacadeTexture, grassTexture,
+  pavingTexture, roofTexture, windowsFacadeTexture,
 } from './textures.ts';
 
 // O mapa vem de shared/map.json (esquemático ou do OpenStreetMap). Tudo o que é decoração (calçadas, faixas,
@@ -452,10 +452,140 @@ function buildVegetationAndProps(map: MapData, scene: THREE.Scene, mobile: boole
   scene.add(lampMesh);
 }
 
+/** Telões nas fachadas dos prédios altos viradas para uma avenida: painel 2:1, levemente afastado da parede. */
+function buildBillboards(map: MapData, scene: THREE.Scene, mobile: boolean): void {
+  const main = map.roads.filter((r) => r.width >= 10);
+  type Spot = { a: Pt; b: Pt; nx: number; nz: number; height: number; score: number; owner: Building };
+  const spots: Spot[] = [];
+  for (const bd of map.buildings) {
+    if (bd.height < 24) continue;
+    const ccw = signedArea(bd.outline) > 0;
+    const n = bd.outline.length;
+    for (let i = 0; i < n; i++) {
+      const a = bd.outline[i];
+      const b = bd.outline[(i + 1) % n];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < 18) continue;
+      // normal para fora da parede (mesma convenção de walls(): sem ccw, a face (a→b, para cima) olha para (-dz, dx))
+      let nx = -(b[1] - a[1]) / len;
+      let nz = (b[0] - a[0]) / len;
+      if (ccw) {
+        nx = -nx;
+        nz = -nz;
+      }
+      const mx = (a[0] + b[0]) / 2 + nx * 12;
+      const mz = (a[1] + b[1]) / 2 + nz * 12;
+      // a parede precisa estar de frente para uma avenida, a menos de 40 m
+      let best = Infinity;
+      for (const r of main) for (let k = 0; k < r.line.length - 1; k++) best = Math.min(best, distToSegment(mx, mz, r.line[k], r.line[k + 1]));
+      if (best > 40) continue;
+      spots.push({ a, b, nx, nz, height: bd.height, score: bd.height - best * 0.3, owner: bd });
+    }
+  }
+  spots.sort((p, q) => q.score - p.score);
+  const r = rng(17);
+  // No máximo um telão por prédio, nos prédios mais altos e mais perto das avenidas.
+  const used = new Set<Building>();
+  const chosen: Spot[] = [];
+  for (const sp of spots) {
+    if (used.has(sp.owner) || chosen.length >= (mobile ? 20 : 60)) continue;
+    used.add(sp.owner);
+    chosen.push(sp);
+  }
+  const perArt: THREE.BufferGeometry[][] = [[], [], [], []];
+  const frames: THREE.BufferGeometry[] = [];
+  chosen.forEach((sp, i) => {
+    const len = Math.hypot(sp.b[0] - sp.a[0], sp.b[1] - sp.a[1]);
+    const w = Math.min(24, len * 0.7);
+    const h = w / 2;
+    const y0 = Math.min(sp.height - h - 2, 8 + r() * Math.max(1, sp.height - h - 12));
+    const cx = (sp.a[0] + sp.b[0]) / 2 + sp.nx * 0.35;
+    const cz = (sp.a[1] + sp.b[1]) / 2 + sp.nz * 0.35;
+    const tx = (sp.b[0] - sp.a[0]) / len;
+    const tz = (sp.b[1] - sp.a[1]) / len;
+    const g = new THREE.PlaneGeometry(w, h);
+    // orienta o plano: +Z local vira a normal da parede
+    const m = new THREE.Matrix4().makeBasis(new THREE.Vector3(tx, 0, tz), new THREE.Vector3(0, 1, 0), new THREE.Vector3(sp.nx, 0, sp.nz));
+    // se a tangente não bate com a normal (plano espelhado), inverte a tangente
+    if (new THREE.Vector3(tx, 0, tz).cross(new THREE.Vector3(0, 1, 0)).dot(new THREE.Vector3(sp.nx, 0, sp.nz)) < 0) {
+      m.makeBasis(new THREE.Vector3(-tx, 0, -tz), new THREE.Vector3(0, 1, 0), new THREE.Vector3(sp.nx, 0, sp.nz));
+    }
+    m.setPosition(cx, y0 + h / 2, cz);
+    g.applyMatrix4(m);
+    perArt[i % 4].push(g);
+    // moldura escura atrás do painel
+    const frame = new THREE.PlaneGeometry(w + 0.8, h + 0.8);
+    const fm = m.clone();
+    fm.setPosition(cx - sp.nx * 0.2, y0 + h / 2, cz - sp.nz * 0.2);
+    frame.applyMatrix4(fm);
+    frames.push(frame);
+  });
+  addMerged(scene, frames, new THREE.MeshStandardMaterial({ color: '#15181c', roughness: 0.6, metalness: 0.3 }), { cast: false, receive: false });
+  perArt.forEach((geos, k) => {
+    if (!geos.length) return;
+    const tex = billboardTexture(k);
+    addMerged(scene, geos, new THREE.MeshStandardMaterial({ map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.55, roughness: 0.6 }),
+      { cast: false, receive: false });
+  });
+}
+
+/** Carros estacionados nas áreas pavimentadas pequenas (estacionamentos): caixas simples, instanciadas. */
+function buildParkedCars(map: MapData, scene: THREE.Scene, mobile: boolean): void {
+  const lots = map.areas.filter((a) => a.kind === 'paved' && Math.abs(signedArea(a.outline)) < 8000);
+  const r = rng(23);
+  const cars: { x: number; z: number; yaw: number; color: THREE.Color }[] = [];
+  const palette = ['#d9d9d9', '#2b2b2b', '#8a8f96', '#b4432f', '#5f86b5', '#f2f0ea', '#4a4f57', '#1f9d55'].map((c) => new THREE.Color(c));
+  const cap = mobile ? 120 : 400;
+  for (const lot of lots) {
+    // eixo maior do lote: do primeiro vértice ao segundo
+    const [a, b] = [lot.outline[0], lot.outline[1]];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const tx = (b[0] - a[0]) / len;
+    const tz = (b[1] - a[1]) / len;
+    const nx = -tz;
+    const nz = tx;
+    let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+    for (const [x, z] of lot.outline) {
+      const u = (x - a[0]) * tx + (z - a[1]) * tz;
+      const v = (x - a[0]) * nx + (z - a[1]) * nz;
+      minU = Math.min(minU, u); maxU = Math.max(maxU, u); minV = Math.min(minV, v); maxV = Math.max(maxV, v);
+    }
+    for (let v = minV + 3.5; v < maxV - 2.5; v += 7) {
+      for (let u = minU + 2; u < maxU - 1.5; u += 2.9) {
+        if (r() < 0.3 || cars.length >= cap) continue;
+        const x = a[0] + tx * u + nx * v;
+        const z = a[1] + tz * u + nz * v;
+        if (!pointInPolygon(x, z, lot.outline)) continue;
+        cars.push({ x, z, yaw: Math.atan2(nx, nz) + (r() - 0.5) * 0.06, color: palette[Math.floor(r() * palette.length)] });
+      }
+    }
+  }
+  if (!cars.length) return;
+  const body = new THREE.BoxGeometry(1.8, 0.6, 4.3);
+  body.translate(0, 0.55, 0);
+  const cabin = new THREE.BoxGeometry(1.6, 0.55, 2.2);
+  cabin.translate(0, 1.1, -0.2);
+  const geo = mergeGeometries([body, cabin].map((g) => g.toNonIndexed()))!;
+  const mesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.45, metalness: 0.4 }), cars.length);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const up = new THREE.Vector3(0, 1, 0);
+  cars.forEach((c, i) => {
+    m.compose(new THREE.Vector3(c.x, 0, c.z), q.setFromAxisAngle(up, c.yaw), new THREE.Vector3(1, 1, 1));
+    mesh.setMatrixAt(i, m);
+    mesh.setColorAt(i, c.color);
+  });
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+}
+
 /** Chão, gramados, água, vias com faixas e calçadas, prédios com fachadas, árvores e postes. */
 export function buildMap(map: MapData, scene: THREE.Scene, mobile = false): void {
   buildGround(map, scene, mobile);
   buildRoads(map, scene);
   buildBuildings(map, scene);
+  buildBillboards(map, scene, mobile);
+  buildParkedCars(map, scene, mobile);
   buildVegetationAndProps(map, scene, mobile);
 }

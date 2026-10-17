@@ -39,7 +39,8 @@ Demonstração publicada na Vercel: https://manifest-delta-five.vercel.app (proj
 ### 3. Mapa real do OpenStreetMap (precisa de você)
 O ambiente de desenvolvimento não alcança o Overpass nem espelhos (Geofabrik, overpass.kumi.systems): os dados reais
 têm que ser baixados numa máquina com internet. O `shared/map.json` atual ainda é o esquemático (`npm run map:esquematico`),
-agora com praça pavimentada, estacionamentos e fileiras de árvores para exercitar o desenho.
+agora com praça pavimentada, estacionamentos, fileiras de árvores, os setores a oeste (quadras de prédios altos com
+fachadas variadas), telões e carros estacionados, para a cidade já parecer cidade enquanto o OSM não chega.
 
 O conversor (`tools/osm.ts`) já extrai do OSM: prédios com altura, cor (`building:colour`) e material da fachada
 (`building:material`: vidro, concreto, tijolo), vias com largura, gramados, parques, matas (`natural=wood`, com árvores
@@ -67,6 +68,18 @@ em relações (multipolígonos). O cliente desenha tudo isso e o minimapa també
 - **Correções na fonte:** o que faltar no OSM (altura, `building:levels`, `building:colour`, árvores) pode ser editado
   direto em openstreetmap.org; a próxima rodada de `npm run map` já pega.
 - **Capturas do resultado** em `C` (câmera aérea) e ao nível do chão, com o que parecer errado anotado.
+
+### 3b. Interface do jogo (17/10): o que é só fachada por enquanto
+A barra superior, os painéis laterais e a barra de ferramentas seguem a referência enviada (Paulista Livre). Funcionam:
+Voltar, Entrar/apelido (voltam à tela inicial), som, tela cheia, ajuda, zoom +/−/recentrar, fechar o card do local,
+chat com abas (Esplanada / Por perto) e altura, Veículos, Cartaz/bandeira (salva a escolha e volta à tela inicial),
+Animações, Customização e Aéreo. Mostram um aviso "chega com a loja e as contas" ao clicar: **Premium, Passes,
+Anunciar no jogo (telões), Superchat, Spray, PvP, Caminhada (inscrições) e Debates ao vivo.** Dependem dos
+subprojetos do item 4. Os telões nas fachadas já existem (artes genéricas: "Anuncie aqui", "Sua marca aqui") e serão
+o espaço vendido por "Anunciar no jogo".
+
+Câmera: livre nos três eixos nos dois modos (arrastar gira, botão direito/Shift inclina, roda e +/− aproximam, Q/E
+giram; espectador também desloca com setas/WASD e inclina com R/F; dois dedos giram e dão zoom no celular).
 
 ### 4. Subprojetos especificados e ainda não feitos
 Ver `docs/specs/2026-10-16-contas-economia-p2w-design.md`.
