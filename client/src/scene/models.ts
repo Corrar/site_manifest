@@ -33,6 +33,10 @@ export function loadModels(): void {
         m.castShadow = true;
         m.receiveShadow = true;
         m.frustumCulled = false; // a caixa da malha não acompanha a animação
+        // O GLTFLoader engole a falha de uma textura e deixa o material sem mapa (personagem branco).
+        // Causa típica: a CSP sem `blob:` em connect-src (o loader busca a imagem do .glb por URL blob:).
+        const mat = m.material as THREE.MeshStandardMaterial;
+        if (mat?.isMeshStandardMaterial && !mat.map) console.error(`modelo ${url}: textura não carregou; confira a Content-Security-Policy (connect-src blob:)`);
       });
       loaded.set(Number(body), { scene: gltf.scene, hipsY: extras.hipsY ?? 0.94, height: extras.height ?? 1.75 });
       for (const cb of listeners) cb();

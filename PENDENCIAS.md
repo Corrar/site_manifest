@@ -47,6 +47,7 @@ Ver `docs/specs/2026-10-16-contas-economia-p2w-design.md`.
 - **PvP, território e influência.**
 
 ### 5. Ajustes menores
+- **Resolvido (17/10):** o Babalorixá aparecia branco na Vercel. A CSP do `vercel.json` não permitia `blob:` em `connect-src`, e o GLTFLoader busca as texturas WebP do .glb por URL `blob:`; a falha é silenciosa (material sem mapa). Agora o `models.ts` avisa no console se a textura não vier.
 - Tom de pele mais claro fica pálido no jogo e não bate com a prévia da tela inicial (tone mapping). Testar `THREE.NeutralToneMapping` ou AgX nos dois renderizadores.
 - Personagens gerados em código: dedos fixos, cabelo longo pode atravessar os ombros, rosto só com cores (sem textura).
 - O caminhão de som colide como um círculo (raio 2,4 m), mas tem ~10 m de comprimento: as pontas podem entrar em prédios.
