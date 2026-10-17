@@ -1,0 +1,401 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 14953,
+      "max": [
+        0.351619154214859,
+        1.75,
+        0.24121591448783875
+      ],
+      "min": [
+        -0.35310009121894836,
+        0,
+        -0.2312968522310257
+      ],
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 14953,
+      "bufferView": 0,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 14953,
+      "bufferView": 0,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 14953,
+      "bufferView": 0,
+      "byteOffset": 40
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5121,
+      "count": 14953,
+      "bufferView": 0,
+      "byteOffset": 48
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 14953,
+      "bufferView": 0,
+      "byteOffset": 52
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 58233,
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "MAT4",
+      "componentType": 5126,
+      "count": 17,
+      "bufferView": 2,
+      "byteOffset": 0
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 1016804,
+      "byteStride": 68,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1016804,
+      "byteLength": 116468,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1133272,
+      "byteLength": 1088
+    }
+  ],
+  "samplers": [
+    {
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 1,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "baseColor",
+      "mimeType": "image/jpeg",
+      "uri": "realista-1-baseColor.jpg"
+    },
+    {
+      "name": "normal",
+      "mimeType": "image/jpeg",
+      "uri": "realista-1-normal.jpg"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "realista-1.bin",
+      "byteLength": 1134360
+    }
+  ],
+  "materials": [
+    {
+      "name": "realista-1",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.8,
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "realista-1",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 6
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "realista-1",
+      "extras": {
+        "hipsY": 0.9370385366135998,
+        "height": 1.75,
+        "source": {
+          "scale": 0.9192837333076836,
+          "offset": [
+            0.0004610331852466375,
+            0.8750836697972274,
+            0.004640078322791754
+          ],
+          "flip180": false
+        }
+      },
+      "mesh": 0,
+      "skin": 0,
+      "children": [
+        1
+      ]
+    },
+    {
+      "name": "hips",
+      "translation": [
+        0,
+        0.9370385366135998,
+        0
+      ],
+      "children": [
+        2,
+        12,
+        15
+      ]
+    },
+    {
+      "name": "spine",
+      "translation": [
+        0,
+        0.11498531148432467,
+        0.00396854430437088
+      ],
+      "children": [
+        3
+      ]
+    },
+    {
+      "name": "chest",
+      "translation": [
+        0,
+        0.1528628258556317,
+        -0.0196993350982666
+      ],
+      "children": [
+        4,
+        6,
+        9
+      ]
+    },
+    {
+      "name": "neck",
+      "translation": [
+        0,
+        0.23538169645026508,
+        -0.0018073096871376038
+      ],
+      "children": [
+        5
+      ]
+    },
+    {
+      "name": "head",
+      "translation": [
+        0,
+        0.06999999999999851,
+        0.008521296083927155
+      ]
+    },
+    {
+      "name": "upperArmL",
+      "translation": [
+        0.18470513820648174,
+        0.1158816217903531,
+        -0.08814536568865913
+      ],
+      "children": [
+        7
+      ]
+    },
+    {
+      "name": "foreArmL",
+      "translation": [
+        0.047927351830860304,
+        -0.2465648503362743,
+        0
+      ],
+      "children": [
+        8
+      ]
+    },
+    {
+      "name": "handL",
+      "translation": [
+        0.03921328786161293,
+        -0.20173487754786057,
+        0
+      ]
+    },
+    {
+      "name": "upperArmR",
+      "translation": [
+        -0.18470513820648174,
+        0.11488177111018216,
+        -0.08806110002329028
+      ],
+      "children": [
+        10
+      ]
+    },
+    {
+      "name": "foreArmR",
+      "translation": [
+        -0.048976242908984724,
+        -0.25196092714455465,
+        0
+      ],
+      "children": [
+        11
+      ]
+    },
+    {
+      "name": "handR",
+      "translation": [
+        -0.04007147147098741,
+        -0.20614984948190807,
+        1.3877787807814457e-17
+      ]
+    },
+    {
+      "name": "upperLegL",
+      "translation": [
+        0.09604667186737051,
+        -0.05681627155696056,
+        0
+      ],
+      "children": [
+        13
+      ]
+    },
+    {
+      "name": "lowerLegL",
+      "translation": [
+        0.020977216756588007,
+        -0.39771390089872344,
+        -0.025555451731149856
+      ],
+      "children": [
+        14
+      ]
+    },
+    {
+      "name": "footL",
+      "translation": [
+        0.02083451460178129,
+        -0.3950083641579158,
+        -0.02538160512073387
+      ]
+    },
+    {
+      "name": "upperLegR",
+      "translation": [
+        -0.09604667186737051,
+        -0.05681627155696056,
+        0
+      ],
+      "children": [
+        16
+      ]
+    },
+    {
+      "name": "lowerLegR",
+      "translation": [
+        -0.021020021893262103,
+        -0.39771390089872344,
+        -0.025510791765443297
+      ],
+      "children": [
+        17
+      ]
+    },
+    {
+      "name": "footR",
+      "translation": [
+        -0.020877028547049425,
+        -0.3950083641579158,
+        -0.025337248964317827
+      ]
+    }
+  ],
+  "skins": [
+    {
+      "name": "esqueleto",
+      "inverseBindMatrices": 7,
+      "skeleton": 1,
+      "joints": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "name": "realista-1",
+      "extras": {
+        "hipsY": 0.9370385366135998,
+        "height": 1.75
+      },
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 
 export const BODIES = ['Homem', 'Mulher', 'Tiozão', 'Babalorixá'] as const;
 /** Corpos vindos de modelo .glb pronto (client/public/models): as outras opções de visual não se aplicam. */
-export const MODEL_BODIES: Readonly<Record<number, string>> = { 3: '/models/realista-1.glb' };
+export const MODEL_BODIES: Readonly<Record<number, string>> = { 3: '/models/realista-1.gltf' };
 export const SKINS = ['#f1d0b5', '#e0ac85', '#c68a5e', '#8d5a3b', '#5c3a26'] as const;
 export const HAIRS = ['Raspado', 'Curto', 'Topete', 'Longo', 'Rabo de cavalo', 'Careca'] as const;
 export const HAIR_COLORS = ['#1d1a17', '#4a2f1d', '#8a5a2b', '#d8b46a', '#9a9a9a'] as const;
