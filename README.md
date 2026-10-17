@@ -38,6 +38,8 @@ Escolha seu time, entre com sua conta e vá para a Esplanada:
   <img src="docs/assets/marcha.svg" alt="Animação: multidão com as cores dos times marchando pela Esplanada com bandeiras, Congresso ao fundo" width="100%" />
 </p>
 
+> **Voltando ao projeto?** Veja [PENDENCIAS.md](PENDENCIAS.md): o que está pronto, onde paramos e o que falta.
+
 ## Documentação
 
 | Documento | Conteúdo |
