@@ -114,9 +114,9 @@ export class CharacterPreview {
     mixer.update(0);
     tpl.root.rotation.y = 0.25;
     const cam = new THREE.PerspectiveCamera(26, 1, 0.1, 20);
-    const hy = tpl.height * 0.87;
-    cam.position.set(0, hy, 1.25);
-    cam.lookAt(0, hy - 0.03, 0);
+    const hy = tpl.height * 0.885;
+    cam.position.set(0, hy, 0.98);
+    cam.lookAt(0, hy - 0.025, 0);
     const prev = new THREE.Vector2();
     this.renderer.getSize(prev);
     this.renderer.setSize(size, size, false);
