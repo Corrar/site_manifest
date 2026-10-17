@@ -1,8 +1,12 @@
 import { pointInPolygon, pushOutOfPolygon, type Pt } from './geometry.ts';
 
 export type Road = { line: Pt[]; width: number };
-export type Building = { outline: Pt[]; height: number };
-export type Area = { outline: Pt[]; kind: 'grass' | 'water' };
+/** Materiais de fachada que o cliente sabe desenhar. Sem `material`, ele escolhe pela altura e pelo tamanho. */
+export type FacadeMaterial = 'glass' | 'concrete' | 'windows' | 'brick';
+export type Building = { outline: Pt[]; height: number; color?: string; material?: FacadeMaterial };
+/** paved: praças, estacionamentos e calçadões. wood: mata fechada (o cliente planta árvores dentro). */
+export type AreaKind = 'grass' | 'water' | 'paved' | 'wood';
+export type Area = { outline: Pt[]; kind: AreaKind };
 export type Bounds = { minX: number; maxX: number; minZ: number; maxZ: number };
 export type MapData = {
   version: 1;
@@ -11,6 +15,8 @@ export type MapData = {
   buildings: Building[];
   areas: Area[];
   solids: Pt[][];
+  /** Árvores mapeadas uma a uma no OSM (opcional; o cliente ainda planta as suas ao longo das vias). */
+  trees?: Pt[];
 };
 
 const GRID = 32;

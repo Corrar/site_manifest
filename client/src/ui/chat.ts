@@ -30,11 +30,13 @@ export class ChatPanel {
   show(on: boolean, canTalk: boolean): void {
     this.panel.hidden = !on;
     this.input.disabled = !canTalk;
-    this.input.placeholder = canTalk ? 'Diga algo… (Enter)' : 'Entre com sua conta para conversar';
+    this.input.placeholder = canTalk ? 'Diga um oi… (Enter)' : 'Entre com sua conta para conversar';
   }
 
-  add(e: ChatEntry): void {
+  /** `near`: a pessoa está por perto (aba "Por perto"). */
+  add(e: ChatEntry, near = true): void {
     const li = document.createElement('li');
+    if (near) li.className = 'near';
     const who = document.createElement('b');
     who.textContent = e.nick; // texto puro, nunca HTML
     who.style.color = teams[e.team]?.color ?? '#cccccc';

@@ -85,7 +85,7 @@ Legenda: ⏳ não iniciada · 🔄 em andamento · ✅ concluída · ⚠️ conc
 
 > **Forma escolhida:** um agente por tarefa (Subagent-Driven).
 > **Situação:** as 15 tarefas foram executadas. Pendências:
-> - **Tarefa 11:** o Overpass (OpenStreetMap) estava inacessível no ambiente de desenvolvimento, então `shared/map.json` vem de um mapa esquemático aproximado (`npm run map:esquematico`). Rode `npm run map` com acesso à internet para gerar o mapa real.
+> - **Tarefa 11:** o Overpass (OpenStreetMap) estava inacessível no ambiente de desenvolvimento, então `shared/map.json` vem de um mapa esquemático aproximado (`npm run map:esquematico`). Rode `npm run map` com acesso à internet para gerar o mapa real, ou exporte do overpass-turbo.eu e use `npm run map -- --from arquivo.json` (passo a passo em `PENDENCIAS.md`, item 3).
 > - **Tarefa 15:** com 1000 bots o tick ficou em p95 165 ms (meta: 25 ms). O perfil aponta `sendSnapshots` (seleção de interesse e um envio por cliente por tick) como o gargalo; detalhes no commit da tarefa.
 
 ## Tela inicial e jogo

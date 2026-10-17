@@ -225,6 +225,99 @@ export function windowsFacadeTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
+/** Fachada de tijolo à vista com janelas (prédios baixos de serviço). Mesmo ladrilho da fachada de janelas. */
+export function brickFacadeTexture(): THREE.CanvasTexture {
+  const r = rng(113);
+  const [c, g] = canvas(512, 512);
+  g.fillStyle = '#9e5a3c';
+  g.fillRect(0, 0, 512, 512);
+  const bh = 8;
+  const bw = 24;
+  for (let y = 0; y < 512; y += bh) {
+    const shift = (y / bh) % 2 ? bw / 2 : 0;
+    for (let x = -bw; x < 512; x += bw) {
+      const k = r();
+      g.fillStyle = k < 0.5 ? '#a3603f' : k < 0.8 ? '#95533a' : '#b06c4a';
+      g.fillRect(x + shift + 1, y + 1, bw - 2, bh - 2);
+    }
+  }
+  g.fillStyle = 'rgba(230,220,200,0.35)';
+  for (let y = 0; y < 512; y += bh) g.fillRect(0, y, 512, 1);
+  const bayW = 512 / 4;
+  const floorH = 512 / 4;
+  for (let fy = 0; fy < 4; fy++) {
+    for (let bx = 0; bx < 4; bx++) {
+      const x = bx * bayW + 26;
+      const y = fy * floorH + 30;
+      const lit = r();
+      g.fillStyle = `rgb(${45 + lit * 30},${58 + lit * 30},${66 + lit * 30})`;
+      g.fillRect(x, y, bayW - 52, floorH - 60);
+      g.fillStyle = '#e5dccd';
+      g.fillRect(x - 5, y + floorH - 60, bayW - 42, 6);
+    }
+  }
+  return finish(c);
+}
+
+/** Telões de anúncio nas fachadas (proporção 2:1). `kind` escolhe a arte; sem marcas nem pessoas reais. */
+export function billboardTexture(kind: number): THREE.CanvasTexture {
+  const [c, g] = canvas(512, 256);
+  const arts: (() => void)[] = [
+    () => {
+      g.fillStyle = '#1f9d55';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#f0d27a';
+      g.font = '800 74px Impact, "Arial Narrow", sans-serif';
+      g.fillText('ANUNCIE', 36, 108);
+      g.fillText('AQUI', 36, 186);
+      g.fillStyle = '#eef5ef';
+      g.font = '600 26px system-ui, sans-serif';
+      g.fillText('a partir de R$ 50,00', 300, 180);
+      g.font = '500 18px system-ui, sans-serif';
+      g.fillText('Telões da Esplanada', 300, 212);
+    },
+    () => {
+      const grad = g.createLinearGradient(0, 0, 512, 256);
+      grad.addColorStop(0, '#13261b');
+      grad.addColorStop(1, '#2b4d36');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#f0d27a';
+      g.font = '800 92px Impact, "Arial Narrow", sans-serif';
+      g.fillText('MANIFEST', 40, 130);
+      g.fillStyle = '#eef5ef';
+      g.font = '600 24px system-ui, sans-serif';
+      g.fillText('SUA VOZ. SEU VISUAL. A ESPLANADA É SUA.', 40, 190);
+    },
+    () => {
+      g.fillStyle = '#0f1a2e';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#5f86b5';
+      g.fillRect(0, 196, 512, 60);
+      g.fillStyle = '#ffffff';
+      g.font = '800 64px Impact, "Arial Narrow", sans-serif';
+      g.fillText('SUA MARCA AQUI', 30, 120);
+      g.fillStyle = '#eef5ef';
+      g.font = '600 24px system-ui, sans-serif';
+      g.fillText('Anunciar no jogo · Telões', 30, 236);
+    },
+    () => {
+      g.fillStyle = '#b4432f';
+      g.fillRect(0, 0, 512, 256);
+      g.fillStyle = '#ffffff';
+      g.font = '800 70px Impact, "Arial Narrow", sans-serif';
+      g.fillText('PASSE DA', 40, 104);
+      g.fillText('MANIFESTAÇÃO', 40, 182);
+      g.font = '600 22px system-ui, sans-serif';
+      g.fillText('em breve', 400, 236);
+    },
+  ];
+  arts[kind % arts.length]();
+  const t = finish(c);
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
 /** Laje de cobertura com brita. Um ladrilho = 10 m. */
 export function roofTexture(): THREE.CanvasTexture {
   const r = rng(97);
