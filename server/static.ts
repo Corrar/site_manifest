@@ -18,7 +18,7 @@ const TYPES: Record<string, string> = {
 
 const CSP = [
   "default-src 'self'", "img-src 'self' data: blob:", "style-src 'self' 'unsafe-inline'",
-  "connect-src 'self' ws: wss: https://*.supabase.co", "frame-ancestors 'none'", "base-uri 'self'", "object-src 'none'",
+  "connect-src 'self' blob: data: ws: wss: https://*.supabase.co", "frame-ancestors 'none'", "base-uri 'self'", "object-src 'none'",
 ].join('; ');
 
 function statOrNull(file: string): Stats | null {
