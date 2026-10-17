@@ -1,6 +1,6 @@
 import { ANIM } from '../../../shared/constants.ts';
 import {
-  BEARDS, EXTRAS, FLAGS, HAIR_COLORS, HAIRS, LEGS, PANTS, PANTS_NAMES, SHIRTS, SKINS,
+  BEARDS, EXTRAS, MODEL_BODIES, FLAGS, HAIR_COLORS, HAIRS, LEGS, PANTS, PANTS_NAMES, SHIRTS, SKINS,
   packLook, unpackLook, type Look,
 } from '../../../shared/looks.ts';
 import teams from '../../../shared/teams.json' with { type: 'json' };
@@ -139,6 +139,15 @@ export class Lobby {
     });
   }
 
+  /** Um modelo .glb terminou de carregar: refaz a prévia e os retratos que usavam o corpo provisório. */
+  modelsReady(): void {
+    this.preview.refresh();
+    const imgs = this.bodyCards.querySelectorAll<HTMLImageElement>('[data-body] img');
+    BASE_CHARACTERS.forEach((c, i) => {
+      if (imgs[i]) imgs[i].src = this.preview.portrait(c.look, this.team);
+    });
+  }
+
   private renderBodies(openShop: () => void): void {
     const cards = BASE_CHARACTERS.map((c, i) => {
       const b = document.createElement('button');
@@ -167,6 +176,8 @@ export class Lobby {
   }
 
   private renderGroups(): void {
+    // Personagem de modelo pronto: as opções de visual não se aplicam a ele.
+    this.groups.hidden = !!MODEL_BODIES[this.look.body];
     this.groups.replaceChildren(...GROUPS.map((g) => {
       const wrap = document.createElement('div');
       wrap.className = 'opt-group';

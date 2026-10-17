@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ANIM } from '../../../shared/constants.ts';
-import { DEFAULT_LOOK, packLook, unpackLook } from '../../../shared/looks.ts';
+import { DEFAULT_LOOK, MODEL_BODIES, packLook, unpackLook } from '../../../shared/looks.ts';
 import teams from '../../../shared/teams.json' with { type: 'json' };
 import { wrapAngle } from '../../../shared/movement.ts';
 import { buildCharacter, type CharacterTemplate } from './character.ts';
+import { loadedModel } from './models.ts';
 import { buildVehicle, VEHICLE_HEIGHT } from './vehicles.ts';
 import { disposeLabel, makeLabel } from './labels.ts';
 
@@ -29,7 +30,11 @@ const BUILDS_PER_FRAME = 2;
 const TEMPLATE_KEEP = 96; // modelos guardados sem uso antes de descartar a geometria
 const POOL_MAX = 48; // avatares prontos guardados para reaproveitar
 
-const keyOf = (v: AvatarPose) => (v.vehicle ? `v${v.vehicle}|${v.team}` : `${v.look}|${v.team}`);
+function keyOf(v: AvatarPose): string {
+  if (v.vehicle) return `v${v.vehicle}|${v.team}`;
+  const body = unpackLook(v.look).body;
+  return MODEL_BODIES[body] ? `m${body}` : `${v.look}|${v.team}`; // modelo pronto: o resto do visual não muda nada
+}
 const DEFAULT_PACKED = packLook(DEFAULT_LOOK);
 
 /**
@@ -107,6 +112,8 @@ export class Avatars {
   private template(key: string, v: AvatarPose, urgent: boolean): Entry | null {
     let e = this.templates.get(key);
     if (!e) {
+      const body = v.vehicle ? 0 : unpackLook(v.look).body;
+      if (MODEL_BODIES[body] && !loadedModel(body)) return null; // ainda carregando: usa o substituto
       if (!urgent && this.builds >= BUILDS_PER_FRAME) return null;
       this.builds++;
       const team = teams[v.team] ?? teams[0];
@@ -173,7 +180,7 @@ export class Avatars {
     for (const [key, e] of idle) {
       if (this.templates.size <= TEMPLATE_KEEP) break;
       this.templates.delete(key);
-      e.tpl.root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      if (!e.tpl.shared) e.tpl.root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
     }
   }
 }

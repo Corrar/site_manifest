@@ -10,9 +10,13 @@ export const BASE_CHARACTERS: { name: string; look: Look }[] = [
   { name: 'Homem', look: L({ body: 0, skin: 1, hair: 1, shirt: 1, flag: 1 }) },
   { name: 'Mulher', look: L({ body: 1, skin: 1, hair: 3, hairColor: 1, shirt: 1, flag: 1 }) },
   { name: 'Tiozão', look: L({ body: 2, skin: 0, hair: 5, hairColor: 4, beard: 1, shirt: 1, flag: 1 }) },
+  { name: 'Babalorixá', look: L({ body: 3 }) },
 ];
 
 export const CATALOG: CatalogItem[] = [
+  { id: 'babalorixa', name: 'Babalorixá', price: 500, team: null,
+    blurb: 'Turbante, bata bordada e guias no pescoço. Leva o axé para a Esplanada. Personagem realista.',
+    look: L({ body: 3 }) },
   { id: 'tiozao-zap', name: 'Tiozão do Zap', price: 300, team: null,
     blurb: 'Óculos na ponta do nariz, bigode e a camisa da seleção. Chegou com áudio de 7 minutos.',
     look: L({ body: 2, skin: 1, hair: 5, hairColor: 4, beard: 1, shirt: 1, extra: 1, flag: 1 }) },

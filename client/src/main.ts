@@ -23,6 +23,7 @@ import { ChatPanel } from './ui/chat.ts';
 import { Hud } from './ui/hud.ts';
 import { Lobby } from './ui/lobby.ts';
 import { Minimap } from './ui/minimap.ts';
+import { loadModels, onModelsLoaded } from './scene/models.ts';
 import { Shop } from './ui/shop.ts';
 
 const FAR_DELAY_MS = 1000 / FAR_HZ + INTERP_DELAY_MS;
@@ -74,6 +75,11 @@ const lobby = new Lobby({
 });
 const shop = new Shop((look) => lobby.setLook(look));
 const chat = new ChatPanel((text) => net.send({ t: 'chat', text }));
+onModelsLoaded(() => {
+  lobby.modelsReady();
+  shop.modelsReady();
+});
+loadModels();
 
 // ---------- modais e barra de ferramentas ----------
 const help = byId('help');

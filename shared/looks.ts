@@ -1,7 +1,9 @@
 // Visual do personagem, empacotado num inteiro (`look`) que vai no perfil e nas mensagens `names`.
 // Cada campo é um índice numa lista abaixo; trocar os textos não muda o formato.
 
-export const BODIES = ['Homem', 'Mulher', 'Tiozão'] as const;
+export const BODIES = ['Homem', 'Mulher', 'Tiozão', 'Babalorixá'] as const;
+/** Corpos vindos de modelo .glb pronto (client/public/models): as outras opções de visual não se aplicam. */
+export const MODEL_BODIES: Readonly<Record<number, string>> = { 3: '/models/realista-1.glb' };
 export const SKINS = ['#f1d0b5', '#e0ac85', '#c68a5e', '#8d5a3b', '#5c3a26'] as const;
 export const HAIRS = ['Raspado', 'Curto', 'Topete', 'Longo', 'Rabo de cavalo', 'Careca'] as const;
 export const HAIR_COLORS = ['#1d1a17', '#4a2f1d', '#8a5a2b', '#d8b46a', '#9a9a9a'] as const;
@@ -63,7 +65,7 @@ export function normalizeLook(n: number): number {
 
 export function randomLook(random: () => number = Math.random): Look {
   const pick = (max: number) => Math.floor(random() * max);
-  const body = pick(BODIES.length);
+  const body = random() < 0.1 ? 3 : pick(3);
   return {
     body,
     skin: pick(SKINS.length),

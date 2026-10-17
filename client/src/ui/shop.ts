@@ -56,6 +56,13 @@ export class Shop {
     };
   }
 
+  /** Um modelo .glb terminou de carregar: refaz retratos e prévia. */
+  modelsReady(): void {
+    this.portraits.clear();
+    this.preview?.refresh();
+    if (!this.el.hidden) this.renderGrid();
+  }
+
   open(team: number): void {
     this.team = team;
     this.el.hidden = false;

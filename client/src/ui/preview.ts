@@ -16,11 +16,20 @@ export class CharacterPreview {
   private current: THREE.Object3D | null = null;
   private anim: number = ANIM.idle;
   private key = '';
+  private currentShared = false;
+  private lastLook: { look: Look; team: number } | null = null;
   private spin = 0.35;
   private targetSpin = 0.35;
   private last = performance.now();
   private dragging: number | null = null;
   private visible = true;
+
+  /** Refaz o personagem atual (ex.: um modelo .glb terminou de carregar e substitui o corpo provisório). */
+  refresh(): void {
+    if (!this.lastLook) return;
+    this.key = '';
+    this.setLook(this.lastLook.look, this.lastLook.team);
+  }
 
   constructor(container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -78,9 +87,11 @@ export class CharacterPreview {
     const tpl = buildCharacter(look, t);
     if (this.current) {
       this.holder.remove(this.current);
-      this.current.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      if (!this.currentShared) this.current.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
     }
     this.current = tpl.root;
+    this.currentShared = !!tpl.shared;
+    this.lastLook = { look, team };
     this.holder.add(tpl.root);
     this.mixer = new THREE.AnimationMixer(tpl.root);
     this.actions = tpl.clips.map((c) => this.mixer!.clipAction(c));
@@ -123,7 +134,7 @@ export class CharacterPreview {
     this.renderer.render(scene, cam);
     const url = this.canvas.toDataURL('image/png');
     this.renderer.setSize(prev.x, prev.y, false);
-    tpl.root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+    if (!tpl.shared) tpl.root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
     return url;
   }
 

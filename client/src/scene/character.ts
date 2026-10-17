@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { loadedModel } from './models.ts';
 import { ANIM } from '../../../shared/constants.ts';
-import { HAIR_COLORS, PANTS, SKINS, type Look } from '../../../shared/looks.ts';
+import { MODEL_BODIES, HAIR_COLORS, PANTS, SKINS, type Look } from '../../../shared/looks.ts';
 
 // Personagem semi-realista gerado em código. Tronco, membros e cabeça são superfícies contínuas (anéis de seção
 // elíptica varridos ao longo dos ossos), com pesos divididos entre dois ossos perto das articulações para dobrar
@@ -9,7 +11,8 @@ import { HAIR_COLORS, PANTS, SKINS, type Look } from '../../../shared/looks.ts';
 // três materiais (pele, tecido e bandeira): no máximo três chamadas de desenho. Animações feitas aqui mesmo.
 // O personagem olha para +Z; a direita dele é -X.
 
-export type CharacterTemplate = { root: THREE.Group; clips: THREE.AnimationClip[]; height: number };
+/** `shared`: a geometria pertence a um modelo carregado e é reaproveitada; quem usa o template não deve descartá-la. */
+export type CharacterTemplate = { root: THREE.Group; clips: THREE.AnimationClip[]; height: number; shared?: boolean };
 
 type Team = { color: string; accent: string };
 type V3 = THREE.Vector3;
@@ -1605,7 +1608,22 @@ function buildFlag(bd: Builder, b: Body, J: Joints, look: Look, team: Team) {
 
 // ---------- montagem ----------
 
+/** Template de um corpo de modelo .glb (null se ainda não carregou). A geometria é compartilhada. */
+function modelTemplate(body: number): CharacterTemplate | null {
+  const m = loadedModel(body);
+  if (!m) return null;
+  const root = new THREE.Group();
+  root.add(cloneSkinned(m.scene));
+  return { root, clips: clipsFor(0, m.hipsY, false), height: m.height, shared: true };
+}
+
 export function buildCharacter(look: Look, team: Team): CharacterTemplate {
+  if (MODEL_BODIES[look.body]) {
+    // Modelo .glb pronto; enquanto não carregou, um corpo gerado com o mesmo visual segura o lugar.
+    const m = modelTemplate(look.body);
+    if (m) return m;
+    look = { ...look, body: 0 };
+  }
   const b = BODY[look.body] ?? BODY[0];
   const J = jointPositions(b);
   const bd = new Builder();
