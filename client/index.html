@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Manifest · manifestação online na Esplanada</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="description" content="Manifestação online na Esplanada dos Ministérios. Escolha seu time, monte seu personagem e vá para a Esplanada." />
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <header id="topbar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="4" y="27" width="32" height="5" rx="1" fill="currentColor" />
+          <rect x="21" y="6" width="5" height="21" rx="1" fill="currentColor" />
+          <rect x="28" y="6" width="5" height="21" rx="1" fill="currentColor" />
+          <path d="M5 27a8 6 0 0 1 15 0z" fill="var(--gold)" />
+        </svg>
+        <div>
+          <strong>MANIFEST</strong>
+          <span>ESPLANADA · BRASÍLIA</span>
+        </div>
+      </div>
+      <nav class="top-actions">
+        <button id="btn-shop" class="pill">Loja de personagens</button>
+        <div id="online-pills" class="online" title="Pessoas na Esplanada agora"></div>
+        <button id="btn-help" class="icon-btn" aria-label="Como jogar">?</button>
+      </nav>
+    </header>
+
+    <section id="lobby">
+      <p class="step">01 / ESCOLHA SEU TIME</p>
+      <h1>De que lado você está?</h1>
+      <div id="team-cards" class="team-cards"></div>
+
+      <div class="creator">
+        <div class="card showcase">
+          <p class="kicker">BRASÍLIA / ESPLANADA DOS MINISTÉRIOS</p>
+          <h2 class="display">SUA VOZ.<br />SEU VISUAL.</h2>
+          <div id="preview" class="preview"></div>
+          <div class="anim-bar">
+            <button data-rot="-1" aria-label="Girar para a esquerda">↺</button>
+            <button data-anim="0" class="on">Parado</button>
+            <button data-anim="1">Andando</button>
+            <button data-anim="3">Acenando</button>
+            <button data-anim="4">Dançando</button>
+            <button data-rot="1" aria-label="Girar para a direita">↻</button>
+          </div>
+          <p class="caption">ARRASTE PARA GIRAR · ALTERAÇÕES EM TEMPO REAL</p>
+        </div>
+
+        <div class="card options">
+          <div class="options-scroll">
+            <div class="row-head">
+              <p class="kicker">02 / MONTE SEU VISUAL</p>
+              <span class="badge">Grátis</span>
+            </div>
+            <h3>Monte seu personagem</h3>
+            <p class="muted">Escolha seu time, monte seu visual e entre na Esplanada.</p>
+            <label class="field">
+              <span>Seu apelido</span>
+              <input id="login-nick" maxlength="20" minlength="2" autocomplete="off" placeholder="Como quer ser chamado?" />
+            </label>
+            <p class="label">ESCOLHA SEU PERSONAGEM</p>
+            <div id="body-cards" class="char-grid"></div>
+            <div id="option-groups"></div>
+          </div>
+          <div class="cta">
+            <div class="cta-row">
+              <button id="btn-play" class="primary">Entrar na manifestação <span aria-hidden="true">→</span></button>
+              <button id="btn-watch" class="ghost">Só quero assistir</button>
+            </div>
+            <p id="lobby-error" role="alert"></p>
+            <p class="tiny">Tudo pronto. A Esplanada espera por você.</p>
+          </div>
+        </div>
+      </div>
+      <p id="demo-note" class="demo-note" hidden>Demonstração: a Esplanada roda no seu navegador, com pessoas simuladas. Ninguém mais vê você.</p>
+    </section>
+
+    <footer id="lobby-footer">
+      <span>UM ENCONTRO DIGITAL. UMA EXPERIÊNCIA COLETIVA.</span>
+      <span>Experiência independente e satírica · mapa © colaboradores do OpenStreetMap</span>
+    </footer>
+
+    <div id="shop" class="modal" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+        <header class="sheet-head">
+          <div>
+            <p class="kicker">SEU PERSONAGEM, EM QUALQUER LADO</p>
+            <h2 id="shop-title">Loja de personagens</h2>
+            <p class="muted">Escolha quem vai com você para a Esplanada.</p>
+          </div>
+          <button id="shop-close" class="icon-btn" aria-label="Fechar">×</button>
+        </header>
+        <div class="sheet-tools">
+          <div id="shop-tabs" class="tabs">
+            <button data-tab="all" class="on">Catálogo</button>
+            <button data-tab="any">Todos os times</button>
+            <button data-tab="team">Meu time</button>
+            <button data-tab="mine">Meus personagens</button>
+          </div>
+          <input id="shop-search" placeholder="Buscar personagem…" autocomplete="off" />
+        </div>
+        <div class="sheet-body">
+          <aside class="shop-detail">
+            <div id="shop-preview" class="preview"></div>
+            <p id="shop-kicker" class="kicker"></p>
+            <h3 id="shop-name"></h3>
+            <p id="shop-blurb" class="muted"></p>
+            <div class="buy">
+              <div>
+                <strong id="shop-price"></strong>
+                <small>Grátis na pré-estreia. A compra com moedas chega com a loja.</small>
+              </div>
+              <button id="shop-use" class="primary">Usar personagem</button>
+            </div>
+          </aside>
+          <div class="shop-list">
+            <p id="shop-count" class="tiny"></p>
+            <div id="shop-grid" class="shop-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="help" class="modal" hidden>
+      <div class="sheet small" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <header class="sheet-head">
+          <h2 id="help-title">Como jogar</h2>
+          <button id="help-close" class="icon-btn" aria-label="Fechar">×</button>
+        </header>
+        <ul class="keys">
+          <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> andar · <kbd>Shift</kbd> correr</li>
+          <li>Arrastar o mouse gira a câmera · roda dá zoom</li>
+          <li><kbd>1</kbd> acenar · <kbd>2</kbd> dançar</li>
+          <li><kbd>C</kbd> câmera aérea · <kbd>Enter</kbd> conversar</li>
+          <li>Veículos: <kbd>W</kbd> acelera, <kbd>A</kbd>/<kbd>D</kbd> vira, <kbd>S</kbd> dá ré · <kbd>F</kbd> desce</li>
+          <li>No celular: joystick na tela</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="hud" hidden>
+      <div id="loc-card" class="glass">
+        <span class="dot"></span>
+        <div>
+          <strong>ESPLANADA DOS MINISTÉRIOS</strong>
+          <span id="loc-sub">Chegando…</span>
+        </div>
+      </div>
+      <div id="minimap-box" class="glass">
+        <canvas id="minimap" width="180" height="180"></canvas>
+        <div class="mm-foot"><span>© OpenStreetMap</span><span id="ping"></span></div>
+      </div>
+      <nav id="toolbar" class="glass">
+        <div class="tool-group">
+          <button id="tool-vehicle" class="tool">Veículos <small>▴</small></button>
+          <div id="vehicle-menu" class="menu glass" hidden>
+            <button data-vehicle="0">A pé <kbd>F</kbd></button>
+            <button data-vehicle="1">Carro de som</button>
+            <button data-vehicle="2">Caminhão de som</button>
+          </div>
+        </div>
+        <div class="tool-group">
+          <button id="tool-anim" class="tool">Animações <small>▴</small></button>
+          <div id="anim-menu" class="menu glass" hidden>
+            <button data-emote="3">Acenar <kbd>1</kbd></button>
+            <button data-emote="4">Dançar <kbd>2</kbd></button>
+          </div>
+        </div>
+        <button id="tool-sound" class="tool">Som: ligado</button>
+        <button id="tool-camera" class="tool">Câmera aérea <kbd>C</kbd></button>
+        <button id="tool-look" class="tool">Visual</button>
+        <button id="tool-help" class="tool">Ajuda</button>
+      </nav>
+    </div>
+
+    <section id="chat" class="glass" hidden>
+      <header class="chat-head">Conversa na Esplanada</header>
+      <ol id="chat-log" aria-live="polite"></ol>
+      <form id="chat-form">
+        <input id="chat-input" maxlength="200" autocomplete="off" />
+        <button aria-label="Enviar">➤</button>
+      </form>
+    </section>
+
+    <div id="joystick" hidden><div class="knob"></div></div>
+    <div id="banner" role="status" hidden></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

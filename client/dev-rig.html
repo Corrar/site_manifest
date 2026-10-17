@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rig · visualizador temporário</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #20262e; color: #e8ecf1; font: 13px/1.35 system-ui, sans-serif; overflow: hidden; }
+      canvas { display: block; }
+      .label { position: absolute; padding: 2px 7px; border-radius: 4px; background: rgba(10, 14, 20, 0.62); pointer-events: none; white-space: nowrap; }
+      #info { position: absolute; right: 8px; bottom: 6px; max-width: 46%; text-align: right; opacity: 0.85; pointer-events: none; }
+      #err { position: absolute; left: 8px; bottom: 6px; color: #ff8a80; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <!--
+      Visualizador temporário do personagem realista com o esqueleto padrão do jogo.
+      Parâmetros: ?t=0.25 (instante, fração de cada animação) &bones=1 (ossos)
+      &focus=corpo|tronco|pernas|maos|cabeca|rosto|nariz|barra|maoE
+      &views=frente,lado,direito,costas,tres,cima,baixo &cols=original,repouso,parado,andar,correr,acenar,dancar
+      &w=<osso>|dominante (pesos) &nmap=0 (sem normal map) &luz=0 (só textura) &model=/models/realista-1.glb
+      &ref=<url do .glb original> (coluna "original", alinhada pelo extras.source do modelo)
+    -->
+    <div id="info"></div>
+    <div id="err"></div>
+    <script type="module" src="/src/dev-rig.ts"></script>
+  </body>
+</html>
