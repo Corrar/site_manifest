@@ -225,6 +225,40 @@ export function windowsFacadeTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
+/** Fachada de tijolo à vista com janelas (prédios baixos de serviço). Mesmo ladrilho da fachada de janelas. */
+export function brickFacadeTexture(): THREE.CanvasTexture {
+  const r = rng(113);
+  const [c, g] = canvas(512, 512);
+  g.fillStyle = '#9e5a3c';
+  g.fillRect(0, 0, 512, 512);
+  const bh = 8;
+  const bw = 24;
+  for (let y = 0; y < 512; y += bh) {
+    const shift = (y / bh) % 2 ? bw / 2 : 0;
+    for (let x = -bw; x < 512; x += bw) {
+      const k = r();
+      g.fillStyle = k < 0.5 ? '#a3603f' : k < 0.8 ? '#95533a' : '#b06c4a';
+      g.fillRect(x + shift + 1, y + 1, bw - 2, bh - 2);
+    }
+  }
+  g.fillStyle = 'rgba(230,220,200,0.35)';
+  for (let y = 0; y < 512; y += bh) g.fillRect(0, y, 512, 1);
+  const bayW = 512 / 4;
+  const floorH = 512 / 4;
+  for (let fy = 0; fy < 4; fy++) {
+    for (let bx = 0; bx < 4; bx++) {
+      const x = bx * bayW + 26;
+      const y = fy * floorH + 30;
+      const lit = r();
+      g.fillStyle = `rgb(${45 + lit * 30},${58 + lit * 30},${66 + lit * 30})`;
+      g.fillRect(x, y, bayW - 52, floorH - 60);
+      g.fillStyle = '#e5dccd';
+      g.fillRect(x - 5, y + floorH - 60, bayW - 42, 6);
+    }
+  }
+  return finish(c);
+}
+
 /** Laje de cobertura com brita. Um ladrilho = 10 m. */
 export function roofTexture(): THREE.CanvasTexture {
   const r = rng(97);

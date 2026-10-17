@@ -3,9 +3,10 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import type { Pt } from '../../../shared/geometry.ts';
 import { pointInPolygon } from '../../../shared/geometry.ts';
 import { Collider, type MapData, type Road } from '../../../shared/map.ts';
+import type { Building, FacadeMaterial } from '../../../shared/map.ts';
 import {
-  asphaltTexture, concreteTexture, FACADE_TILE, glassFacadeTexture, grassTexture, pavingTexture, roofTexture,
-  windowsFacadeTexture,
+  asphaltTexture, brickFacadeTexture, concreteTexture, FACADE_TILE, glassFacadeTexture, grassTexture, pavingTexture,
+  roofTexture, windowsFacadeTexture,
 } from './textures.ts';
 
 // O mapa vem de shared/map.json (esquemático ou do OpenStreetMap). Tudo o que é decoração (calçadas, faixas,
@@ -173,6 +174,12 @@ function buildGround(map: MapData, scene: THREE.Scene, mobile: boolean): void {
   const lawn = grassTexture();
   addMerged(scene, map.areas.filter((a) => a.kind === 'grass').map((a) => flatShape(a.outline, 0.03, 14)),
     new THREE.MeshStandardMaterial({ map: lawn, color: '#9fc27a', roughness: 0.9, ...layer(1) }), { cast: false, receive: true });
+  // Mata fechada: chão mais escuro (as árvores vão por cima, em buildVegetationAndProps).
+  addMerged(scene, map.areas.filter((a) => a.kind === 'wood').map((a) => flatShape(a.outline, 0.04, 14)),
+    new THREE.MeshStandardMaterial({ map: grassTexture(), color: '#6f8f4e', roughness: 0.95, ...layer(1) }), { cast: false, receive: true });
+  // Praças, calçadões e estacionamentos.
+  addMerged(scene, map.areas.filter((a) => a.kind === 'paved').map((a) => flatShape(a.outline, 0.05, 6)),
+    new THREE.MeshStandardMaterial({ map: pavingTexture(), roughness: 0.85, ...layer(2) }), { cast: false, receive: true });
   addMerged(scene, map.areas.filter((a) => a.kind === 'water').map((a) => flatShape(a.outline, 0.08, 8)),
     new THREE.MeshStandardMaterial({ color: '#35617a', roughness: 0.06, metalness: 0.85, ...layer(1) }), { cast: false, receive: true });
 }
@@ -231,17 +238,27 @@ function signedArea(pts: Pt[]): number {
   return a / 2;
 }
 
-/** Paredes de um prédio, separadas em vidro, concreto cego e janelas, com UV em ladrilhos de fachada. */
-function walls(outline: Pt[], height: number, out: { glass: number[][]; blind: number[][]; windows: number[][] }): void {
+type WallBuckets = Record<FacadeMaterial, number[][]>;
+const WHITE = new THREE.Color('#ffffff');
+
+/** Material de cada parede: o que o OSM disser; senão vidro nas fachadas longas dos prédios altos, concreto nas curtas, janelas nos baixos. */
+function facadeOf(bd: Building, len: number): FacadeMaterial {
+  if (bd.material) return bd.material === 'concrete' && bd.height < 30 ? 'windows' : bd.material;
+  return bd.height >= 30 ? (len >= 40 ? 'glass' : 'concrete') : 'windows';
+}
+
+/** Paredes de um prédio, separadas por material, com UV em ladrilhos de fachada e cor por vértice (tingimento do OSM). */
+function walls(bd: Building, height: number, out: WallBuckets, pick: (len: number) => FacadeMaterial = (len) => facadeOf(bd, len)): void {
+  const outline = bd.outline;
   const ccw = signedArea(outline) > 0;
   const n = outline.length;
+  const c = bd.color ? new THREE.Color(bd.color) : WHITE;
   for (let i = 0; i < n; i++) {
     const a = outline[i];
     const b = outline[(i + 1) % n];
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     if (len < 0.05) continue;
-    const tall = height >= 30;
-    const bucket = tall ? (len >= 40 ? out.glass : out.blind) : out.windows;
+    const bucket = out[pick(len)];
     const [p0, p1] = ccw ? [b, a] : [a, b]; // ordem que deixa a face virada para fora
     const u1 = len / FACADE_TILE.w;
     const v1 = height / FACADE_TILE.h;
@@ -249,7 +266,7 @@ function walls(outline: Pt[], height: number, out: { glass: number[][]; blind: n
       [p0[0], 0, p0[1], 0, 0], [p1[0], 0, p1[1], u1, 0], [p1[0], height, p1[1], u1, v1],
       [p0[0], 0, p0[1], 0, 0], [p1[0], height, p1[1], u1, v1], [p0[0], height, p0[1], 0, v1],
     ];
-    bucket.push(...quadPos);
+    for (const q of quadPos) bucket.push([...q, c.r, c.g, c.b]);
   }
 }
 
@@ -258,21 +275,22 @@ function wallGeometry(verts: number[][]): THREE.BufferGeometry | null {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(verts.flatMap((v) => [v[0], v[1], v[2]]), 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(verts.flatMap((v) => [v[3], v[4]]), 2));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(verts.flatMap((v) => [v[5], v[6], v[7]]), 3));
   g.computeVertexNormals();
   return g;
 }
 
 function buildBuildings(map: MapData, scene: THREE.Scene): void {
-  const buckets = { glass: [] as number[][], blind: [] as number[][], windows: [] as number[][] };
+  const buckets: WallBuckets = { glass: [], concrete: [], windows: [], brick: [] };
   const roofs: THREE.BufferGeometry[] = [];
   const parapets: THREE.BufferGeometry[] = [];
   for (const bd of map.buildings) {
-    walls(bd.outline, bd.height, buckets);
+    walls(bd, bd.height, buckets);
     roofs.push(flatShape(bd.outline, bd.height, 10));
     // Platibanda: um friso claro no topo.
-    const ring: number[][] = [];
-    walls(bd.outline, 0.9, { glass: ring, blind: ring, windows: ring });
-    const pg = wallGeometry(ring);
+    const ring: WallBuckets = { glass: [], concrete: [], windows: [], brick: [] };
+    walls({ outline: bd.outline, height: bd.height }, 0.9, ring, () => 'concrete');
+    const pg = wallGeometry(ring.concrete);
     if (pg) {
       pg.translate(0, bd.height, 0);
       parapets.push(pg);
@@ -280,12 +298,14 @@ function buildBuildings(map: MapData, scene: THREE.Scene): void {
   }
   const glass = glassFacadeTexture();
   addMerged(scene, [wallGeometry(buckets.glass)],
-    new THREE.MeshStandardMaterial({ map: glass, roughness: 0.18, metalness: 0.55, envMapIntensity: 1.3 }),
+    new THREE.MeshStandardMaterial({ map: glass, roughness: 0.18, metalness: 0.55, envMapIntensity: 1.3, vertexColors: true }),
     { cast: true, receive: true });
-  addMerged(scene, [wallGeometry(buckets.blind)],
-    new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.85 }), { cast: true, receive: true });
+  addMerged(scene, [wallGeometry(buckets.concrete)],
+    new THREE.MeshStandardMaterial({ map: concreteTexture(), roughness: 0.85, vertexColors: true }), { cast: true, receive: true });
   addMerged(scene, [wallGeometry(buckets.windows)],
-    new THREE.MeshStandardMaterial({ map: windowsFacadeTexture(), roughness: 0.7 }), { cast: true, receive: true });
+    new THREE.MeshStandardMaterial({ map: windowsFacadeTexture(), roughness: 0.7, vertexColors: true }), { cast: true, receive: true });
+  addMerged(scene, [wallGeometry(buckets.brick)],
+    new THREE.MeshStandardMaterial({ map: brickFacadeTexture(), roughness: 0.9, vertexColors: true }), { cast: true, receive: true });
   addMerged(scene, roofs, new THREE.MeshStandardMaterial({ map: roofTexture(), roughness: 0.95 }), { cast: false, receive: true });
   addMerged(scene, parapets, new THREE.MeshStandardMaterial({ color: '#e7e3d8', roughness: 0.8, side: THREE.DoubleSide }), { cast: false, receive: false });
 }
@@ -349,6 +369,30 @@ function buildVegetationAndProps(map: MapData, scene: THREE.Scene, mobile: boole
         const x = s.x - s.dz * off + (r() - 0.5) * 3;
         const z = s.z + s.dx * off + (r() - 0.5) * 3;
         if (free(x, z, 1.5)) trees.push({ x, z, s: 0.8 + r() * 0.6, rot: r() * Math.PI * 2 });
+      }
+    }
+  }
+  // Árvores mapeadas no OSM, uma a uma (com um leve desvio para não ficarem em grade perfeita).
+  for (const [tx, tz] of map.trees ?? []) {
+    const x = tx + (r() - 0.5) * 0.8;
+    const z = tz + (r() - 0.5) * 0.8;
+    if (!collider.blocked(x, z)) trees.push({ x, z, s: 0.85 + r() * 0.5, rot: r() * Math.PI * 2 });
+  }
+  // Mata fechada: árvores espalhadas dentro das áreas de mata, até um teto por área.
+  for (const w of map.areas) {
+    if (w.kind !== 'wood') continue;
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const [x, z] of w.outline) {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+    }
+    const want = Math.min(mobile ? 120 : 400, Math.round(((maxX - minX) * (maxZ - minZ)) / 90));
+    let planted = 0;
+    for (let i = 0; i < want * 3 && planted < want; i++) {
+      const x = minX + r() * (maxX - minX);
+      const z = minZ + r() * (maxZ - minZ);
+      if (pointInPolygon(x, z, w.outline) && free(x, z, 2)) {
+        trees.push({ x, z, s: 0.9 + r() * 0.8, rot: r() * Math.PI * 2 });
+        planted++;
       }
     }
   }

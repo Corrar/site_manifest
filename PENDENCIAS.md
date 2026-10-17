@@ -36,9 +36,37 @@ Demonstração publicada na Vercel: https://manifest-delta-five.vercel.app (proj
 - Configurar `ALLOWED_ORIGINS` e, opcionalmente, Cloudflare na frente.
 - **Teste de carga fora da meta:** com 1000 bots, o tick ficou em p95 165 ms (meta < 25 ms). O gargalo é `sendSnapshots` (`server/session.ts`): a seleção de interesse e um envio por cliente por tick. Os detalhes estão no commit `0ed012e`.
 
-### 3. Mapa real do OpenStreetMap
-- O `shared/map.json` atual é esquemático (`npm run map:esquematico`), porque o Overpass estava bloqueado no ambiente de desenvolvimento.
-- Numa máquina com internet, rode `npm run map` e confira as capturas.
+### 3. Mapa real do OpenStreetMap (precisa de você)
+O ambiente de desenvolvimento não alcança o Overpass nem espelhos (Geofabrik, overpass.kumi.systems): os dados reais
+têm que ser baixados numa máquina com internet. O `shared/map.json` atual ainda é o esquemático (`npm run map:esquematico`),
+agora com praça pavimentada, estacionamentos e fileiras de árvores para exercitar o desenho.
+
+O conversor (`tools/osm.ts`) já extrai do OSM: prédios com altura, cor (`building:colour`) e material da fachada
+(`building:material`: vidro, concreto, tijolo), vias com largura, gramados, parques, matas (`natural=wood`, com árvores
+plantadas dentro), praças e estacionamentos (piso pavimentado), água, fileiras de árvores e árvores isoladas, inclusive
+em relações (multipolígonos). O cliente desenha tudo isso e o minimapa também.
+
+**Como gerar (escolha um caminho):**
+1. **Direto** (Node 22.18+ e internet): `npm run map`. Grava `shared/map.json`. Para guardar a resposta bruta:
+   `npm run map -- --salvar tools/osm-bruto.json`.
+2. **Pelo overpass-turbo.eu** (quando o Overpass bloqueia o script):
+   - `npm run map -- --consulta` imprime a consulta. Cole em https://overpass-turbo.eu e rode.
+   - Exportar → "dados brutos diretamente da API do Overpass" (raw data), salve o `.json`.
+   - `npm run map -- --from caminho/do/arquivo.json`.
+3. Depois: `npm run test`, `npm run dev:client` e confira as capturas (tela inicial e `C` para a câmera aérea).
+   Se a origem cair dentro de um prédio, o script avisa; ajuste `ORIGIN` em `shared/geo.ts` ou o marco.
+4. Faça o commit do `shared/map.json` (e do `tools/osm-bruto.json`, se quiser reprodutibilidade sem internet).
+
+**O que mais ajuda na cidade realista:**
+- **Área coberta:** hoje é da Rodoviária à Praça dos Três Poderes (`BBOX` em `tools/osm.ts`). Diga se quer incluir a
+  Torre de TV, o Lago Paranoá ou os setores comerciais; o limite do protocolo é ±1638 m da origem.
+- **Marcos para modelar à mão:** Congresso e Catedral já existem. Candidatos: Museu Nacional (cúpula), Biblioteca Nacional,
+  Teatro Nacional, Palácio do Planalto, STF, Itamaraty (com os arcos e o espelho d'água), Rodoviária. Fotos de referência
+  (frente, lateral, de cima) e medidas aproximadas (altura, largura) aceleram muito. Modelos `.glb` prontos também servem,
+  desde que a licença permita uso no jogo.
+- **Correções na fonte:** o que faltar no OSM (altura, `building:levels`, `building:colour`, árvores) pode ser editado
+  direto em openstreetmap.org; a próxima rodada de `npm run map` já pega.
+- **Capturas do resultado** em `C` (câmera aérea) e ao nível do chão, com o que parecer errado anotado.
 
 ### 4. Subprojetos especificados e ainda não feitos
 Ver `docs/specs/2026-10-16-contas-economia-p2w-design.md`.

@@ -30,8 +30,9 @@ export class Minimap {
     g.fillStyle = '#5c6b4f';
     g.fillRect(0, 0, this.base.width, this.base.height);
     g.fillStyle = '#4f8a3c';
+    const AREA_COLOR = { grass: '#4f8a3c', water: '#3d7fb8', paved: '#8e8a80', wood: '#3a6a2c' } as const;
     for (const a of map.areas) {
-      g.fillStyle = a.kind === 'water' ? '#3d7fb8' : '#4f8a3c';
+      g.fillStyle = AREA_COLOR[a.kind] ?? '#4f8a3c';
       poly(a.outline);
       g.fill();
     }

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import type { Pt } from '../shared/geometry.ts';
 import { LANDMARKS } from '../shared/landmarks.ts';
 import { Collider, type Area, type Building, type MapData, type Road } from '../shared/map.ts';
-import { toMapData } from './osm.ts';
+import { sampleAlong, toMapData } from './osm.ts';
 
 const congresso = LANDMARKS.find((l) => l.name === 'Congresso Nacional');
 if (!congresso) throw new Error('marco do Congresso não encontrado');
@@ -46,7 +46,15 @@ export function buildSchematicMap(): MapData {
   const areas: Area[] = [
     { outline: localRect(-700, 470, -130, 130), kind: 'grass' },
     { outline: localRect(-1300, -720, -130, 130), kind: 'grass' },
+    // Praça dos Três Poderes: piso de pedra em volta do Congresso, do Planalto e do STF.
+    { outline: localRect(690, 930, -240, 240), kind: 'paved' },
   ];
+  // Estacionamentos atrás dos anexos, entre a via de serviço e o fundo do lote.
+  for (const side of [-1, 1]) {
+    for (const u of MINISTRY_U) {
+      areas.push({ outline: localRect(u - 36, u + 36, side * 342, side * 372), kind: 'paved' });
+    }
+  }
 
   const roads: Road[] = [
     { line: line(-1350, -150, 760, -150), width: 21 }, // N1
@@ -81,8 +89,16 @@ export function buildSchematicMap(): MapData {
     buildings.push({ outline: localRect(b.u - b.du / 2, b.u + b.du / 2, b.v - b.dv / 2, b.v + b.dv / 2), height: b.height });
   }
 
+  // Fileiras de árvores nos vãos entre os ministérios, dos dois lados do eixo.
+  const trees: Pt[] = [];
+  for (const side of [-1, 1]) {
+    for (const u of MINISTRY_U.map((c) => c + 85 / 2 - 12)) {
+      trees.push(...sampleAlong([toWorld(u, side * 165), toWorld(u, side * 310)], 8));
+    }
+  }
+
   const solids = LANDMARKS.map((l) => l.footprint.map(([x, z]): Pt => [r2(x), r2(z)]));
-  return { version: 1, bounds, roads, buildings, areas, solids };
+  return { version: 1, bounds, roads, buildings, areas, solids, trees };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
