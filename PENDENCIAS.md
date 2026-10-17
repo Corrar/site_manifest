@@ -11,7 +11,7 @@ Demonstração publicada na Vercel: https://manifest-delta-five.vercel.app (proj
 - **Jogo estilo RP:** emotes (1 acenar, 2 dançar), carro e caminhão de som com batucada, câmera aérea, minimapa e barra de ações.
 - **Mapa com céu físico, sombras e texturas:** ministérios de vidro, faixas, árvores com ipês, Congresso, Catedral e Mastro da Bandeira.
 - **Personagens semi-realistas** gerados em código (`client/src/scene/character.ts`).
-- **Babalorixá:** o modelo .glb enviado, otimizado de 48 MB para 2,2 MB, com esqueleto e as animações do jogo (`client/public/models/realista-1.glb`).
+- **Babalorixá:** o modelo .glb enviado, otimizado de 48 MB para 2,5 MB, com esqueleto e as animações do jogo. Publicado como `client/public/models/realista-1.gltf` + `.bin` + texturas JPEG ao lado (`tools/rig/externalize.ts` faz essa conversão a partir do .glb do rig).
 - **Revisão completa** com 24 achados confirmados. Os altos e médios foram corrigidos (commit `77c7864`).
 
 ## Pendências
@@ -25,8 +25,8 @@ Demonstração publicada na Vercel: https://manifest-delta-five.vercel.app (proj
   - transição de pesos lowerLeg→upperLeg em volta do joelho.
 - **Como continuar:**
   - `cd tools/rig && npm install`
-  - `node rig.ts <original.glb> ../../client/public/models/realista-1.glb`
-  - Visualizador: `npx vite --port 5310` e abra `http://localhost:5310/dev-rig.html?model=/models/realista-1.glb&t=0.3&views=frente,costas`
+  - `node rig.ts <original.glb> /tmp/realista-1.glb && node externalize.ts /tmp/realista-1.glb ../../client/public/models/realista-1.gltf`
+  - Visualizador: `npx vite --port 5310` e abra `http://localhost:5310/dev-rig.html?model=/models/realista-1.gltf&t=0.3&views=frente,costas`
 - **Arquivos de apoio:** o original de 48 MB está na branch `modelos` (`modelos/result.glb`). As capturas dos avaliadores ficaram fora do repositório.
 - **Alternativa de melhor qualidade:** fazer o rigging no Mixamo (mixamo.com, grátis). É preciso converter o .glb para .fbx ou .obj no Blender.
 - **Direitos do modelo:** o usuário precisa confirmar que pode publicá-lo. Se foi gerado a partir da foto de uma pessoa real, precisa da autorização dela.
@@ -47,7 +47,7 @@ Ver `docs/specs/2026-10-16-contas-economia-p2w-design.md`.
 - **PvP, território e influência.**
 
 ### 5. Ajustes menores
-- **Resolvido (17/10):** o Babalorixá aparecia branco na Vercel. A CSP do `vercel.json` não permitia `blob:` em `connect-src`, e o GLTFLoader busca as texturas WebP do .glb por URL `blob:`; a falha é silenciosa (material sem mapa). Agora o `models.ts` avisa no console se a textura não vier.
+- **Babalorixá branco (17/10):** duas correções. (1) A CSP do `vercel.json` não permitia `blob:` em `connect-src`, e o GLTFLoader busca textura embutida por URL `blob:`; a falha é silenciosa (material sem mapa). (2) As texturas saíram de dentro do .glb: agora são JPEG em arquivos ao lado do `.gltf`, buscados como qualquer imagem do site, sem `blob:` e sem exigir a extensão WebP. O `models.ts` avisa no console se a textura não vier. Se ainda aparecer branco, abrir o console do navegador (F12) e mandar a mensagem.
 - Tom de pele mais claro fica pálido no jogo e não bate com a prévia da tela inicial (tone mapping). Testar `THREE.NeutralToneMapping` ou AgX nos dois renderizadores.
 - Personagens gerados em código: dedos fixos, cabelo longo pode atravessar os ombros, rosto só com cores (sem textura).
 - O caminhão de som colide como um círculo (raio 2,4 m), mas tem ~10 m de comprimento: as pontas podem entrar em prédios.

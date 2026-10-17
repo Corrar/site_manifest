@@ -11,7 +11,7 @@ const phase = Number(q.get('t') ?? '0.25');
 const showBones = !!q.get('bones') && q.get('bones') !== '0';
 const focus = q.get('focus') ?? 'corpo';
 const weightView = q.get('w');
-const modelUrl = q.get('model') ?? '/models/realista-1.glb';
+const modelUrl = q.get('model') ?? '/models/realista-1.gltf';
 /** Modelo original (estático, pose T) para comparar na coluna "original", no mesmo enquadramento (extras.source). */
 const refUrl = q.get('ref');
 
