@@ -16,15 +16,15 @@ type V3 = THREE.Vector3;
 /** Pares (osso, peso); normalizados na hora de gravar. */
 type W = [number, number][];
 
-const BONES = [
+export const BONES = [
   'hips', 'spine', 'chest', 'neck', 'head',
   'upperArmL', 'foreArmL', 'handL', 'upperArmR', 'foreArmR', 'handR',
   'upperLegL', 'lowerLegL', 'footL', 'upperLegR', 'lowerLegR', 'footR',
 ] as const;
-type BoneName = (typeof BONES)[number];
+export type BoneName = (typeof BONES)[number];
 const B = Object.fromEntries(BONES.map((n, i) => [n, i])) as Record<BoneName, number>;
 
-const PARENT: Record<BoneName, BoneName | null> = {
+export const PARENT: Record<BoneName, BoneName | null> = {
   hips: null, spine: 'hips', chest: 'spine', neck: 'chest', head: 'neck',
   upperArmL: 'chest', foreArmL: 'upperArmL', handL: 'foreArmL',
   upperArmR: 'chest', foreArmR: 'upperArmR', handR: 'foreArmR',
@@ -1706,7 +1706,8 @@ function holdHand(pose: Pose, target: V3 = V(0, 1, 0)): [number, number, number]
 
 const clipCache = new Map<string, THREE.AnimationClip[]>();
 
-function clipsFor(body: number, hipsY: number, hold: boolean): THREE.AnimationClip[] {
+/** Animações (índices ANIM) para o esqueleto padrão; também usadas pelos modelos .glb com o mesmo esqueleto. */
+export function clipsFor(body: number, hipsY: number, hold: boolean): THREE.AnimationClip[] {
   const key = `${body}:${hipsY.toFixed(3)}:${hold ? 1 : 0}`;
   const cached = clipCache.get(key);
   if (cached) return cached;
